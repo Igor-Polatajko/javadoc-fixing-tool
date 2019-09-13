@@ -21,8 +21,9 @@ public class Main {
     }
 
     private static void fixFiles(List<File> sourceFiles) {
+        JavadocFixingHandler fixingHandler = new JavadocFixingHandler();
         for (int i = 0; i < sourceFiles.size(); i++) {
-            JavadocFixingHandler.fix(sourceFiles.get(i));
+            fixingHandler.fix(sourceFiles.get(i));
             drawProgressBar(i, sourceFiles.size());
         }
     }
