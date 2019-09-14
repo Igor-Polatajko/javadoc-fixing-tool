@@ -14,7 +14,7 @@ public class FileContentHandler {
 
         StringBuilder fileContent = new StringBuilder();
         while (sc.hasNextLine()) {
-            fileContent.append(sc.nextLine()).append("\n");
+            fileContent.append(sc.nextLine()).append("\n\r");
         }
 
         return fileContent.toString();

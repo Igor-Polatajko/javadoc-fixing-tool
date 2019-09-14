@@ -14,39 +14,42 @@ public class JavadocFixingHandlerTest {
 
     @Test
     public void fixAmpersands_successFlow() {
-        String testValue = "public class Class {\n" +
-                "\n" +
-                "    /**\n" +
-                "     * a & b\n" +
-                "     * a&b\n" +
-                "     * &lt;tag>\n" +
-                "     * &lttag>\n" +
-                "     * <tag&gt;\n" +
-                "     * &ltt&gt\n" +
-                "     */\n" +
-                "    // a & b\n" +
-                "    public void m(){\n" +
-                "\n" +
-                "    }\n" +
-                "}\n";
+        String testValue = "/**\n\r" +
+                "     * a & b\n\r" +
+                "     * a&b\n\r" +
+                "     * &lt;tag>\n\r" +
+                "     * &lttag>\n\r" +
+                "     * <tag&gt;\n\r" +
+                "     * &ltt&gt\n\r";
 
-        String expectedValue = "public class Class {\n" +
-                "\n" +
-                "    /**\n" +
-                "     * a and b\n" +
-                "     * a and b\n" +
-                "     * <tag>\n" +
-                "     * <tag>\n" +
-                "     * <tag>\n" +
-                "     * <t>\n" +
-                "     */\n" +
-                "    // a & b\n" +
-                "    public void m(){\n" +
-                "\n" +
-                "    }\n" +
-                "}\n";
+        String expectedValue = "/**\n\r" +
+                "     * a and b\n\r" +
+                "     * a and b\n\r" +
+                "     * <tag>\n\r" +
+                "     * <tag>\n\r" +
+                "     * <tag>\n\r" +
+                "     * <t>\n\r";
 
-        String actualValue = javadocFixingHandler.fixAmpersands(new StringBuilder(testValue));
+        String actualValue = javadocFixingHandler.fixAmpersands(testValue);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixGenerics_successFlow() {
+        String testValue = "/**\n\r" +
+                "     * @param map - Map<String, String> {@link Map<String, String>}\n\r" +
+                "     * @param list - List<String>\n\r" +
+                "     * {@link List<String>#containsAll(Collection<String>)}\n\r" +
+                "     * {@link List<String>#containsAll(Collection<?>)}\n\r";
+
+        String expectedValue = "/**\n\r" +
+                "     * @param map - Map (String - key,  String - value) {@link Map}\n\r" +
+                "     * @param list - List of generics type String\n\r" +
+                "     * {@link List#containsAll(Collection)}\n\r" +
+                "     * {@link List#containsAll(Collection)}\n\r";
+
+        String actualValue = javadocFixingHandler.fixGenerics(testValue);
 
         assertEquals(expectedValue, actualValue);
     }
