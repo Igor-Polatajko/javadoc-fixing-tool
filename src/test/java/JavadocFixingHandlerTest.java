@@ -17,20 +17,58 @@ public class JavadocFixingHandlerTest {
         String testValue = "/**\n" +
                 "     * a & b\n" +
                 "     * a&b\n" +
-                "     * &lt;tag>\n" +
-                "     * &lttag>\n" +
-                "     * <tag&gt;\n" +
-                "     * &ltt&gt\n";
+                "     * &gt;tag&lt;\n" +
+                "*/";
 
         String expectedValue = "/**\n" +
                 "     * a and b\n" +
                 "     * a and b\n" +
-                "     * <tag>\n" +
-                "     * <tag>\n" +
-                "     * <tag>\n" +
-                "     * <t>\n";
+                "     * &gt;tag&lt;\n" +
+                "*/";
 
         String actualValue = javadocFixingHandler.fixAmpersands(testValue);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixBadUseOfAngleBrackets_successFlow() {
+        String testValue = "/**\n" +
+                "     * a > b\n" +
+                "     * a >= b\n" +
+                "     * a < b\n" +
+                "     * a <= b\n" +
+                "     * a -> b\n" +
+                "*/";
+
+        String expectedValue = "/**\n" +
+                "     * a greater than b\n" +
+                "     * a equal or greater than b\n" +
+                "     * a less than b\n" +
+                "     * a equal or less than b\n" +
+                "     * a --- b\n" +
+                "*/";
+
+        String actualValue = javadocFixingHandler.fixBadUseOfAngleBrackets(testValue);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixIncompleteTags() {
+        String testValue = "/**\n" +
+                "     * &lt;complexContent>\n" +
+                "     * &lt;complexContent{}>\n" +
+                "     * &lt;complexContent\"\">\n" +
+                "*/";
+
+        String expectedValue = "/**\n" +
+                "     * &lt;complexContent&gt;\n" +
+                "     * &lt;complexContent{}&gt;\n" +
+                "     * &lt;complexContent\"\"&gt;\n" +
+                "*/";
+
+        String actualValue = javadocFixingHandler.fixIncompleteTags(testValue);
 
         assertEquals(expectedValue, actualValue);
     }

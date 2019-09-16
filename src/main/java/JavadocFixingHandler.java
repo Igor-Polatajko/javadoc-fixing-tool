@@ -37,8 +37,9 @@ public class JavadocFixingHandler {
             String javadoc = fileContent.substring(javadocStart, javadocEnd);
 
             // Fixing
-            String fixedJavadoc = fixAmpersands(javadoc);
+            String fixedJavadoc = fixIncompleteTags(javadoc);
             fixedJavadoc = fixBadUseOfAngleBrackets(fixedJavadoc);
+            fixedJavadoc = fixAmpersands(fixedJavadoc);
             fixedJavadoc = fixGenerics(fixedJavadoc);
 
             fileContent.replace(javadocStart, javadocEnd, fixedJavadoc);
@@ -49,19 +50,29 @@ public class JavadocFixingHandler {
 
     // Visible for testing
     String fixAmpersands(String javadoc) {
-        javadoc = javadoc.replaceAll("(&lt;|&lt)+", "<"); // "&lt;" -> "<"
-        javadoc = javadoc.replaceAll("(&gt;|&gt)+", ">"); // "&gt;" -> ">"
-        javadoc = javadoc.replaceAll("(&+)|([ ]+[&]+[ ]+)", " and "); // "&" -> "and"
-        return javadoc;
+        return javadoc.replaceAll("(&+|[ ]+&+[ ]+)(?!(?:apos|quot|[gl]t|amp);|#)", " and "); // "&" -> "and"
     }
 
     // Visible for testing
     String fixBadUseOfAngleBrackets(String javadoc) {
-        javadoc = javadoc.replaceAll("[ ]+[>][ ]+", " greater than "); // ">" -> "greater than"
-        javadoc = javadoc.replaceAll("[ ]+[<][ ]+", " less than "); // "<" -> "less than"
-        javadoc = javadoc.replaceAll("[ ]+[>=][ ]+", " equal or greater than "); // ">=" -> "equal or greater than"
-        javadoc = javadoc.replaceAll("[ ]+[<=][ ]+", " equal or less than "); // "<=" -> "equal or less than"
-        javadoc = javadoc.replaceAll("[-]+[>]", "---"); // "->" -> "---"
+        javadoc = javadoc.replaceAll("[ ]+>[ ]+", " greater than ") // ">" -> "greater than"
+                .replaceAll("[ ]+<[ ]+", " less than ") // "<" -> "less than"
+                .replaceAll("[ ]+>=[ ]+", " equal or greater than ") // ">=" -> "equal or greater than"
+                .replaceAll("[ ]+<=[ ]+", " equal or less than ") // "<=" -> "equal or less than"
+                .replaceAll("[-]+>", "---"); // "->" -> "---"
+
+        return javadoc;
+    }
+
+    String fixIncompleteTags(String javadoc) {
+        Pattern pattern = Pattern.compile("&lt;[^<]*?>");
+        Matcher matcher = pattern.matcher(javadoc);
+
+        while (matcher.find()) {
+            String notCorrectlyClosedTag = matcher.group();
+            String fixedTag = notCorrectlyClosedTag.replaceAll(">", "&gt;");
+            javadoc = javadoc.replaceFirst(eliminateSpecialChars(notCorrectlyClosedTag), fixedTag);
+        }
 
         return javadoc;
     }
@@ -126,11 +137,7 @@ public class JavadocFixingHandler {
                 }
             }
 
-            // To prevent bug when generics is <?>
-            generics = generics.replaceAll("[?]", "");
-            javadoc = javadoc.replaceAll("<[?]>", "");
-
-            javadoc = javadoc.replaceFirst(generics, replacement);
+            javadoc = javadoc.replaceFirst(eliminateSpecialChars(generics), replacement);
             matcher = pattern.matcher(javadoc);
         }
         return javadoc;
@@ -185,6 +192,19 @@ public class JavadocFixingHandler {
                 return true;
             }
         }
+    }
+
+    private String eliminateSpecialChars(String regex) {
+        String result = "";
+        for (int i = 0; i < regex.length(); i++) {
+            if (regex.charAt(i) == ']' || regex.charAt(i) == '[') {
+                result += "[\\" + regex.charAt(i) + "]";
+            } else {
+                result += "[" + regex.charAt(i) + "]";
+            }
+        }
+
+        return result;
     }
 
     private boolean noGenerics(String generics) {
