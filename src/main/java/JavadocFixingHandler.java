@@ -1,4 +1,6 @@
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -11,7 +13,11 @@ public class JavadocFixingHandler {
         String fileContent = FileContentHandler.getFileContent(file);
         String fixedJavadoc = fixJavadocSyntaxOnlyProblems(fileContent);
 
-        // ToDo rewrite source file with new data
+        if (!fileContent.equals(fixedJavadoc)) {
+            rewriteFile(file, fixedJavadoc);
+        }
+
+        System.gc();
     }
 
     /*package*/ String fixJavadocSyntaxOnlyProblems(String fileContentString) {
@@ -22,7 +28,7 @@ public class JavadocFixingHandler {
 
         while (true) {
             javadocStart = fileContent.indexOf(START_PATTERN, javadocStart + 1);
-            javadocEnd = fileContent.indexOf(END_PATTERN, javadocEnd + 1);
+            javadocEnd = fileContent.indexOf(END_PATTERN, javadocStart + 1);
 
             if (javadocStart < 0 || javadocEnd < 0) {
                 break;
@@ -38,10 +44,6 @@ public class JavadocFixingHandler {
             fileContent.replace(javadocStart, javadocEnd, fixedJavadoc);
         }
 
-        System.gc();
-
-        System.out.println(fileContent);
-
         return fileContent.toString();
     }
 
@@ -55,8 +57,10 @@ public class JavadocFixingHandler {
 
     // Visible for testing
     String fixBadUseOfAngleBrackets(String javadoc) {
-        javadoc = javadoc.replaceAll("[ ]+[>][ ]+", "greater than"); // ">" -> "greater than"
-        javadoc = javadoc.replaceAll("[ ]+[<][ ]+", "less than"); // "<" -> "less than"
+        javadoc = javadoc.replaceAll("[ ]+[>][ ]+", " greater than "); // ">" -> "greater than"
+        javadoc = javadoc.replaceAll("[ ]+[<][ ]+", " less than "); // "<" -> "less than"
+        javadoc = javadoc.replaceAll("[ ]+[>=][ ]+", " equal or greater than "); // ">=" -> "equal or greater than"
+        javadoc = javadoc.replaceAll("[ ]+[<=][ ]+", " equal or less than "); // "<=" -> "equal or less than"
         javadoc = javadoc.replaceAll("[-]+[>]", "---"); // "->" -> "---"
 
         return javadoc;
@@ -64,18 +68,18 @@ public class JavadocFixingHandler {
 
     // Visible for testing
     String fixGenerics(String javadoc) {
-        Pattern pattern = Pattern.compile("[A-Z]+[A-Za-z0-9]*[<].*?[>]");
+        Pattern pattern = Pattern.compile("[A-Z]+[A-Za-z0-9]*[ ]?[<].*?[>]");
         Matcher matcher = pattern.matcher(javadoc);
 
         while (matcher.find()) {
             String generics = matcher.group();
 
+            if (noGenerics(generics)) {
+                continue;
+            }
+
             int paramsStart = generics.indexOf("<");
             int paramsEnd = generics.lastIndexOf(">");
-
-            boolean insideLinkOrSeeBlock =
-                    insideBlock(javadoc, "@link", matcher.start()) ||
-                            insideBlock(javadoc, "@see", matcher.start());
 
             String classType = generics.substring(0, paramsStart);
             String[] params = generics.substring(paramsStart + 1, paramsEnd).split(",|, ");
@@ -83,7 +87,13 @@ public class JavadocFixingHandler {
             String replacement = null;
             boolean replacementReady = false;
 
-            if (insideLinkOrSeeBlock) {
+            boolean removeGenericsAtAllArea =
+                    insideBlock(javadoc, "@link", matcher.start()) ||
+                            insideBlock(javadoc, "@code", matcher.start()) ||
+                            insideTag(javadoc, "code", matcher.start()) ||
+                            afterWordInOneLine(javadoc, "@see", matcher.start());
+
+            if (removeGenericsAtAllArea) {
                 replacement = classType;
                 replacementReady = true;
             }
@@ -140,6 +150,54 @@ public class JavadocFixingHandler {
             if (index > indexOfBlockTypeStartInsideJavadoc && index < indexOfBlockTypeEndInsideJavadoc) {
                 return true;
             }
+        }
+    }
+
+    private boolean insideTag(String javadoc, String tag, int index) {
+        int indexOfOpeningTag = 0;
+
+        while (true) {
+            indexOfOpeningTag = javadoc.indexOf("<" + tag + ">", indexOfOpeningTag + 1);
+            int indexOfClosingTag = javadoc.indexOf("</" + tag + ">", indexOfOpeningTag + 1);
+
+            if (indexOfOpeningTag < 0 || indexOfClosingTag < 0) {
+                return false;
+            }
+
+            if (index > indexOfOpeningTag && index < indexOfClosingTag) {
+                return true;
+            }
+        }
+    }
+
+    private boolean afterWordInOneLine(String javadoc, String word, int index) {
+        int indexOfWordStart = 0;
+
+        while (true) {
+            indexOfWordStart = javadoc.indexOf(word, indexOfWordStart + 1);
+            int indexOfNewLine = javadoc.indexOf("\n", indexOfWordStart + 1);
+
+            if (indexOfWordStart < 0 || indexOfNewLine < 0) {
+                return false;
+            }
+
+            if (index > indexOfWordStart && index < indexOfNewLine) {
+                return true;
+            }
+        }
+    }
+
+    private boolean noGenerics(String generics) {
+        return generics.matches(".*</.+?>.*");
+    }
+
+    private void rewriteFile(File file, String newContent) {
+        try {
+            FileWriter fooWriter = new FileWriter(file, false);
+            fooWriter.write(newContent);
+            fooWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
