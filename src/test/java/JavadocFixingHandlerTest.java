@@ -2,6 +2,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class JavadocFixingHandlerTest {
 
@@ -99,4 +100,97 @@ public class JavadocFixingHandlerTest {
 
         assertEquals(expectedValue, actualValue);
     }
+
+    @Test
+    public void fixSelfEnclosingAndEmptyTags() {
+        String testValue = "/**\n" +
+                "     * <p/>\n" +
+                "     * <tag></tag>\n" +
+                "     * <tag>Tag-body</tag>\"\">\n" +
+                "*/";
+
+        String expectedValue = "/**\n" +
+                "     * \n" +
+                "     * \n" +
+                "     * <tag>Tag-body</tag>\"\">\n" +
+                "*/";
+
+        String actualValue = javadocFixingHandler.fixSelfEnclosingAndEmptyTags(testValue);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void getDescribedEntity_successFlow_method() {
+        String testValue = "public class App {\n" +
+                "\n" +
+                "\n" +
+                "    /**\n" +
+                "     * a and b\n" +
+                "     * Map  (String - key,  String - value)\n" +
+                "     *     {@code Map }\n" +
+                "     *         Collection of generics type String\n" +
+                "     */\n" +
+                "    void m() throws Exception {\n" +
+                "\n" +
+                "\n" +
+                "    }\n" +
+                "\n" +
+                "}\n" +
+                "\n";
+
+        String expectedData = "*/\n" +
+                "    void m() throws Exception ";
+
+        DescribedEntity resultDescribedEntity = javadocFixingHandler.getDescribedEntity(167, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.METHOD, resultDescribedEntity.getType());
+        assertEquals(expectedData, resultDescribedEntity.getData());
+    }
+
+    @Test
+    public void getDescribedEntity_successFlow_class() {
+        String testValue = "/**\n" +
+                " * Javadoc\n" +
+                " */\n" +
+                "public class App {\n" +
+                "\n" +
+                "    void m() throws Exception {\n" +
+                "\n" +
+                "\n" +
+                "    }\n" +
+                "}\n" +
+                "\n";
+        String expectedData = "*/\n" +
+                "public class App ";
+
+        DescribedEntity resultDescribedEntity = javadocFixingHandler.getDescribedEntity(16, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.CLASS, resultDescribedEntity.getType());
+        assertEquals(expectedData, resultDescribedEntity.getData());
+    }
+
+    @Test
+    public void getDescribedEntity_successFlow_interface() {
+        String testValue = "/**\n" +
+                " * Javadoc\n" +
+                " */\n" +
+                "public interface App {\n" +
+                "\n" +
+                "    void m() throws Exception ;\n" +
+                "}\n" +
+                "\n";
+
+        String expectedData = "*/\n" +
+                "public interface App ";
+
+        DescribedEntity resultDescribedEntity = javadocFixingHandler.getDescribedEntity(16, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.INTERFACE, resultDescribedEntity.getType());
+        assertEquals(expectedData, resultDescribedEntity.getData());
+    }
+
 }

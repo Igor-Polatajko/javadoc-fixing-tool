@@ -11,7 +11,7 @@ public class JavadocFixingHandler {
 
     public void fix(File file) {
         String fileContent = FileContentHandler.getFileContent(file);
-        String fixedJavadoc = fixJavadocSyntaxOnlyProblems(fileContent);
+        String fixedJavadoc = fixJavadocSyntaxProblems(fileContent);
 
         if (!fileContent.equals(fixedJavadoc)) {
             rewriteFile(file, fixedJavadoc);
@@ -20,9 +20,9 @@ public class JavadocFixingHandler {
         System.gc();
     }
 
-    /*package*/ String fixJavadocSyntaxOnlyProblems(String fileContentString) {
-        int javadocStart = 0;
-        int javadocEnd = 0;
+    /*package*/ String fixJavadocSyntaxProblems(String fileContentString) {
+        int javadocStart = -1;
+        int javadocEnd;
 
         StringBuilder fileContent = new StringBuilder(fileContentString);
 
@@ -35,17 +35,64 @@ public class JavadocFixingHandler {
             }
 
             String javadoc = fileContent.substring(javadocStart, javadocEnd);
+            DescribedEntity describedEntity = getDescribedEntity(javadocEnd, fileContent.toString());
 
-            // Fixing
-            String fixedJavadoc = fixIncompleteTags(javadoc);
+            System.out.println(describedEntity.getData());
+
+            String fixedJavadoc = javadoc;
+
+            // Fixing javadoc based on described entity
+            fixedJavadoc = fixJavadocBasedOnDescribedEntity(fixedJavadoc, describedEntity);
+
+            // Fixing syntax problems
+            fixedJavadoc = fixIncompleteTags(fixedJavadoc);
             fixedJavadoc = fixBadUseOfAngleBrackets(fixedJavadoc);
             fixedJavadoc = fixAmpersands(fixedJavadoc);
             fixedJavadoc = fixGenerics(fixedJavadoc);
+            fixedJavadoc = fixSelfEnclosingAndEmptyTags(fixedJavadoc);
 
             fileContent.replace(javadocStart, javadocEnd, fixedJavadoc);
         }
 
         return fileContent.toString();
+    }
+
+    /*package*/ String fixJavadocBasedOnDescribedEntity(String javadoc, DescribedEntity describedEntity) {
+        // Todo fix javadoc
+
+        return javadoc;
+    }
+
+    // Visible for testing
+    DescribedEntity getDescribedEntity(int javadocEndIndex, String fileContent) {
+        DescribedEntity describedEntity = new DescribedEntity();
+
+        int indexOfNextCurlyBracket = fileContent.indexOf("{", javadocEndIndex + 1);
+        int indexOfNextSemicolon = fileContent.indexOf(";", javadocEndIndex + 1);
+
+        if (indexOfNextSemicolon > 0 && (indexOfNextCurlyBracket > indexOfNextSemicolon || indexOfNextCurlyBracket < 0)) {
+            describedEntity.setPresent(false);
+            return describedEntity;
+        }
+
+        describedEntity.setData(fileContent.substring(javadocEndIndex, indexOfNextCurlyBracket));
+        describedEntity.setPresent(true);
+
+        if (describedEntity.getData().contains(" class ")) {
+            describedEntity.setType(DescribedEntity.Type.CLASS);
+        } else if (describedEntity.getData().contains(" interface ")) {
+            describedEntity.setType(DescribedEntity.Type.INTERFACE);
+        } else {
+            describedEntity.setType(DescribedEntity.Type.METHOD);
+        }
+
+        return describedEntity;
+    }
+
+    // Visible for testing
+    String fixSelfEnclosingAndEmptyTags(String javadoc) {
+        return javadoc.replaceAll("<[^>]*?\\/>", "") // "<p/>" -> ""
+                .replaceAll("<[^>]*?><\\/[^>]*?>", ""); // <tag></tag> -> ""
     }
 
     // Visible for testing
@@ -64,6 +111,7 @@ public class JavadocFixingHandler {
         return javadoc;
     }
 
+    // Visible for testing
     String fixIncompleteTags(String javadoc) {
         Pattern pattern = Pattern.compile("&lt;[^<]*?>");
         Matcher matcher = pattern.matcher(javadoc);
@@ -144,7 +192,7 @@ public class JavadocFixingHandler {
     }
 
     private boolean insideBlock(String javadoc, String blockType, int index) {
-        int indexOfBlockTypeStartInsideJavadoc = 0;
+        int indexOfBlockTypeStartInsideJavadoc = -1;
 
         while (true) {
             indexOfBlockTypeStartInsideJavadoc = javadoc.indexOf(blockType, indexOfBlockTypeStartInsideJavadoc + 1);
@@ -161,7 +209,7 @@ public class JavadocFixingHandler {
     }
 
     private boolean insideTag(String javadoc, String tag, int index) {
-        int indexOfOpeningTag = 0;
+        int indexOfOpeningTag = -1;
 
         while (true) {
             indexOfOpeningTag = javadoc.indexOf("<" + tag + ">", indexOfOpeningTag + 1);
@@ -178,7 +226,7 @@ public class JavadocFixingHandler {
     }
 
     private boolean afterWordInOneLine(String javadoc, String word, int index) {
-        int indexOfWordStart = 0;
+        int indexOfWordStart = -1;
 
         while (true) {
             indexOfWordStart = javadoc.indexOf(word, indexOfWordStart + 1);
