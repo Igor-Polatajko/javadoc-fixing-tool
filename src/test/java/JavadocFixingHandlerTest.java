@@ -102,16 +102,18 @@ public class JavadocFixingHandlerTest {
     }
 
     @Test
-    public void fixSelfEnclosingAndEmptyTags() {
+    public void fixSelfEnclosingAndEmptyTags_successFlow() {
         String testValue = "/**\n" +
                 "     * <p/>\n" +
-                "     * <tag></tag>\n" +
+                "     * <tag/>\n" +
+                "     * <tag></tag><another tag>\n" +
                 "     * <tag>Tag-body</tag>\"\">\n" +
                 "*/";
 
         String expectedValue = "/**\n" +
                 "     * \n" +
-                "     * \n" +
+                "     * <tag>\n" +
+                "     * <another tag>\n" +
                 "     * <tag>Tag-body</tag>\"\">\n" +
                 "*/";
 
@@ -125,11 +127,15 @@ public class JavadocFixingHandlerTest {
         String testValue = "/**\n" +
                 "     * @see" +
                 "     * @custom-annotation\n" +
+                "     * @Annotation\n" +
+                "     * <a href=\"mailto:me@gmail.com\">me</a>\n" +
                 "*/";
 
         String expectedValue = "/**\n" +
                 "     * @see" +
                 "     * Custom-annotation\n" +
+                "     * Annotation\n" +
+                "     * <a href=\"mailto:me@gmail.com\">me</a>\n" +
                 "*/";
 
         String actualValue = javadocFixingHandler.fixSelfInventedAnnotations(testValue);

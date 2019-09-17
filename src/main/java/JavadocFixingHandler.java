@@ -51,6 +51,7 @@ public class JavadocFixingHandler {
             fixedJavadoc = fixAmpersands(fixedJavadoc);
             fixedJavadoc = fixGenerics(fixedJavadoc);
             fixedJavadoc = fixSelfEnclosingAndEmptyTags(fixedJavadoc);
+            fixedJavadoc = fixSelfInventedAnnotations(fixedJavadoc);
 
             fileContent.replace(javadocStart, javadocEnd, fixedJavadoc);
         }
@@ -92,8 +93,23 @@ public class JavadocFixingHandler {
 
     // Visible for testing
     String fixSelfEnclosingAndEmptyTags(String javadoc) {
-        return javadoc.replaceAll("<[^>]*?\\/>", "") // "<p/>" -> ""
-                .replaceAll("<[^>]*?>[ *\n]*?<\\/[^>]*?>", ""); // <tag></tag> -> ""
+        javadoc = javadoc.replaceAll("<[^\\/>][^>]*><\\/[^>]+>", ""); // <tag></tag> -> ""
+
+        // Specific case for <p/>
+        javadoc = javadoc.replaceAll("<p/>", "");
+
+        Pattern pattern = Pattern.compile("<[^>]*?\\/>");
+        Matcher matcher = pattern.matcher(javadoc);
+
+        while (matcher.find()) {
+            String tag = matcher.group();
+            String fixedTag = tag.replaceAll("\\/", "");
+            javadoc = javadoc.replace(tag, fixedTag);
+            matcher = pattern.matcher(javadoc);
+        }
+
+
+        return javadoc;
     }
 
     // Visible for testing
@@ -112,10 +128,10 @@ public class JavadocFixingHandler {
         while (matcher.find()) {
             String annotation = matcher.group();
 
-            if (!allowedAnnotations.contains(annotation)) {
+            if (!allowedAnnotations.contains(annotation) && !insideTag(javadoc, "a", matcher.start())) {
                 String replacement =
                         annotation.substring(1, 2).toUpperCase() + annotation.substring(2);
-                javadoc = javadoc.replaceFirst(annotation, replacement);
+                javadoc = javadoc.replaceFirst(eliminateSpecialChars(annotation), replacement);
                 matcher = pattern.matcher(javadoc);
             }
         }
@@ -237,20 +253,20 @@ public class JavadocFixingHandler {
     }
 
     private boolean insideTag(String javadoc, String tag, int index) {
-        int indexOfOpeningTag = -1;
+        Pattern startTagPattern = Pattern.compile("<" + tag + ".*?>");
+        Pattern endTagPattern = Pattern.compile("</" + tag + "");
 
-        while (true) {
-            indexOfOpeningTag = javadoc.indexOf("<" + tag + ">", indexOfOpeningTag + 1);
-            int indexOfClosingTag = javadoc.indexOf("</" + tag + ">", indexOfOpeningTag + 1);
+        Matcher startTagMatcher = startTagPattern.matcher(javadoc);
+        Matcher endTagMatcher = endTagPattern.matcher(javadoc);
 
-            if (indexOfOpeningTag < 0 || indexOfClosingTag < 0) {
-                return false;
-            }
-
-            if (index > indexOfOpeningTag && index < indexOfClosingTag) {
+        while (startTagMatcher.find() && endTagMatcher.find()) {
+            if (endTagMatcher.start() > startTagMatcher.start() &&
+                    endTagMatcher.start() > index && startTagMatcher.start() < index) {
                 return true;
             }
         }
+
+        return false;
     }
 
     private boolean afterWordInOneLine(String javadoc, String word, int index) {

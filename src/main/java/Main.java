@@ -29,7 +29,7 @@ public class Main {
     }
 
     private static void drawProgressBar(int fileNumber, int filesCount) {
-        int progressPercent = (int) Math.round((((double) fileNumber / filesCount) * 100));
+        int progressPercent = (int) Math.round(((double) (fileNumber + 1) / filesCount) * 100);
         int progressBarLength = 40;
         boolean bracketNotShown = true;
 
