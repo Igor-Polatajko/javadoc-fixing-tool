@@ -121,6 +121,23 @@ public class JavadocFixingHandlerTest {
     }
 
     @Test
+    public void fixSelfInventedAnnotations_successFlow() {
+        String testValue = "/**\n" +
+                "     * @see" +
+                "     * @custom-annotation\n" +
+                "*/";
+
+        String expectedValue = "/**\n" +
+                "     * @see" +
+                "     * Custom-annotation\n" +
+                "*/";
+
+        String actualValue = javadocFixingHandler.fixSelfInventedAnnotations(testValue);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
     public void getDescribedEntity_successFlow_method() {
         String testValue = "public class App {\n" +
                 "\n" +

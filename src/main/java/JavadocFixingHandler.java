@@ -1,6 +1,9 @@
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,8 +40,6 @@ public class JavadocFixingHandler {
             String javadoc = fileContent.substring(javadocStart, javadocEnd);
             DescribedEntity describedEntity = getDescribedEntity(javadocEnd, fileContent.toString());
 
-            System.out.println(describedEntity.getData());
-
             String fixedJavadoc = javadoc;
 
             // Fixing javadoc based on described entity
@@ -70,7 +71,7 @@ public class JavadocFixingHandler {
         int indexOfNextCurlyBracket = fileContent.indexOf("{", javadocEndIndex + 1);
         int indexOfNextSemicolon = fileContent.indexOf(";", javadocEndIndex + 1);
 
-        if (indexOfNextSemicolon > 0 && (indexOfNextCurlyBracket > indexOfNextSemicolon || indexOfNextCurlyBracket < 0)) {
+        if (indexOfNextCurlyBracket < 0 || indexOfNextSemicolon > 0 && (indexOfNextCurlyBracket > indexOfNextSemicolon)) {
             describedEntity.setPresent(false);
             return describedEntity;
         }
@@ -92,7 +93,34 @@ public class JavadocFixingHandler {
     // Visible for testing
     String fixSelfEnclosingAndEmptyTags(String javadoc) {
         return javadoc.replaceAll("<[^>]*?\\/>", "") // "<p/>" -> ""
-                .replaceAll("<[^>]*?><\\/[^>]*?>", ""); // <tag></tag> -> ""
+                .replaceAll("<[^>]*?>[ *\n]*?<\\/[^>]*?>", ""); // <tag></tag> -> ""
+    }
+
+    // Visible for testing
+    String fixSelfInventedAnnotations(String javadoc) {
+        Set<String> allowedAnnotations = new HashSet<>(Arrays.asList(
+                "@author", "@version", "@param",
+                "@return", "@deprecated", "@since",
+                "@throws", "@exception", "@see",
+                "@serial", "@serialField", "@serialData",
+                "@link", "@code"
+        ));
+
+        Pattern pattern = Pattern.compile("@+.+?\\b");
+        Matcher matcher = pattern.matcher(javadoc);
+
+        while (matcher.find()) {
+            String annotation = matcher.group();
+
+            if (!allowedAnnotations.contains(annotation)) {
+                String replacement =
+                        annotation.substring(1, 2).toUpperCase() + annotation.substring(2);
+                javadoc = javadoc.replaceFirst(annotation, replacement);
+                matcher = pattern.matcher(javadoc);
+            }
+        }
+
+        return javadoc;
     }
 
     // Visible for testing
