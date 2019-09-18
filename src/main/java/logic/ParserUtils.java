@@ -72,4 +72,8 @@ public class ParserUtils {
     static boolean noGenerics(String generics) {
         return generics.matches(".*</.+?>.*");
     }
+
+    static String skipJavaAnnotations (String data) {
+        return data.replaceAll("[@][A-Za-z0-9].*?[\\n]", "");
+    }
 }

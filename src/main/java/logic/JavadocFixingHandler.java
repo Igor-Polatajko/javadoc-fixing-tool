@@ -62,10 +62,11 @@ public class JavadocFixingHandler {
         if (!describedEntity.isPresent() || describedEntity.getType() != DescribedEntity.Type.METHOD) {
             return javadoc;
         }
-
         MethodDescription methodDescription = EntityParser.getMethodDescription(describedEntity);
 
-        return javadoc;
+        String fixedJavadoc = fixReturnWithVoidMethod(javadoc, methodDescription);
+        // ToDo add another fixes
+        return fixedJavadoc;
     }
 
     /*package*/ String fixJavadocBasedOnSyntaxRequirements(String javadoc) {
@@ -77,6 +78,15 @@ public class JavadocFixingHandler {
         fixedJavadoc = fixSelfInventedAnnotations(fixedJavadoc);
 
         return fixedJavadoc;
+    }
+
+    // Visible for testing
+    String fixReturnWithVoidMethod(String javadoc, MethodDescription methodDescription){
+        if (!methodDescription.isPresent() || !methodDescription.getReturnType().equals("void")) {
+            return javadoc;
+        }
+
+        return javadoc.replaceAll("[@]return.*", "");
     }
 
     // Visible for testing

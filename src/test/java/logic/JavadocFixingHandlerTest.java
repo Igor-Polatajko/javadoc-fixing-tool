@@ -1,5 +1,6 @@
 package logic;
 
+import entity.MethodDescription;
 import logic.JavadocFixingHandler;
 import org.junit.Before;
 import org.junit.Test;
@@ -147,4 +148,22 @@ public class JavadocFixingHandlerTest {
         assertEquals(expectedValue, actualValue);
     }
 
+    @Test
+    public void fixReturnWithVoidMethod() {
+        String testValue = "/**\n" +
+                "     @return result\n" +
+                "*/";
+
+        String expectedValue = "/**\n" +
+                "     \n" +
+                "*/";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setPresent(true);
+        testMethodDescription.setReturnType("void");
+
+        String actualValue = javadocFixingHandler.fixReturnWithVoidMethod(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
 }

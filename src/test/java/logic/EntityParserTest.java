@@ -25,6 +25,7 @@ public class EntityParserTest {
                 "     *     {@code Map }\n" +
                 "     *         Collection of generics type String\n" +
                 "     */\n" +
+                "    @Annotation\n" +
                 "    void m() throws Exception {\n" +
                 "\n" +
                 "\n" +
@@ -34,7 +35,7 @@ public class EntityParserTest {
                 "\n";
 
         String expectedData = "*/\n" +
-                "    void m() throws Exception ";
+                "        void m() throws Exception ";
 
         DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(167, testValue);
 
@@ -60,6 +61,27 @@ public class EntityParserTest {
                 "\n" +
                 "}\n" +
                 "\n";
+
+        String expectedData = "*/\n" +
+                "    String field";
+
+        DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(65, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.FIELD, resultDescribedEntity.getType());
+        assertEquals(expectedData, resultDescribedEntity.getData());
+    }
+
+    @Test
+    public void getDescribedEntity_successFlow_fieldOnly() {
+        String testValue = "public class App {\n" +
+                "\n" +
+                "\n" +
+                "    /**\n" +
+                "    some field documentation * \n" +
+                "    */\n" +
+                "    String field; \n";
+
 
         String expectedData = "*/\n" +
                 "    String field";
@@ -99,6 +121,7 @@ public class EntityParserTest {
         String testValue = "/**\n" +
                 " * Javadoc\n" +
                 " */\n" +
+                "@Annotation\n" +
                 "public interface App {\n" +
                 "\n" +
                 "    void m() throws Exception ;\n" +
@@ -112,6 +135,23 @@ public class EntityParserTest {
 
         assertTrue(resultDescribedEntity.isPresent());
         assertEquals(DescribedEntity.Type.INTERFACE, resultDescribedEntity.getType());
+        assertEquals(expectedData, resultDescribedEntity.getData());
+    }
+
+    @Test
+    public void getDescribedEntity_successFlow_another() {
+        String testValue = "/**\n" +
+                " * Javadoc\n" +
+                " */\n" +
+                "context.checking(new Expectations() {}";
+
+        String expectedData = "*/\n" +
+                "context.checking(new Expectations() ";
+
+        DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(16, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.ANOTHER, resultDescribedEntity.getType());
         assertEquals(expectedData, resultDescribedEntity.getData());
     }
 
