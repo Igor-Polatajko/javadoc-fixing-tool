@@ -1,6 +1,4 @@
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,7 +15,7 @@ public class JavadocFixingHandler {
         String fixedJavadoc = fixJavadocSyntaxProblems(fileContent);
 
         if (!fileContent.equals(fixedJavadoc)) {
-            rewriteFile(file, fixedJavadoc);
+            FileContentHandler.rewriteFile(file, fixedJavadoc);
         }
 
         System.gc();
@@ -46,12 +44,7 @@ public class JavadocFixingHandler {
             fixedJavadoc = fixJavadocBasedOnDescribedEntity(fixedJavadoc, describedEntity);
 
             // Fixing syntax problems
-            fixedJavadoc = fixIncompleteTags(fixedJavadoc);
-            fixedJavadoc = fixBadUseOfAngleBrackets(fixedJavadoc);
-            fixedJavadoc = fixAmpersands(fixedJavadoc);
-            fixedJavadoc = fixGenerics(fixedJavadoc);
-            fixedJavadoc = fixSelfEnclosingAndEmptyTags(fixedJavadoc);
-            fixedJavadoc = fixSelfInventedAnnotations(fixedJavadoc);
+            fixedJavadoc = fixJavadocBasedOnSyntaxRequirements(fixedJavadoc);
 
             fileContent.replace(javadocStart, javadocEnd, fixedJavadoc);
         }
@@ -60,9 +53,68 @@ public class JavadocFixingHandler {
     }
 
     /*package*/ String fixJavadocBasedOnDescribedEntity(String javadoc, DescribedEntity describedEntity) {
-        // Todo fix javadoc
+        if (!describedEntity.isPresent() || describedEntity.getType() != DescribedEntity.Type.METHOD) {
+            return javadoc;
+        }
+
 
         return javadoc;
+    }
+
+    /*package*/ String fixJavadocBasedOnSyntaxRequirements(String javadoc) {
+        String fixedJavadoc = fixIncompleteTags(javadoc);
+        fixedJavadoc = fixBadUseOfAngleBrackets(fixedJavadoc);
+        fixedJavadoc = fixAmpersands(fixedJavadoc);
+        fixedJavadoc = fixGenerics(fixedJavadoc);
+        fixedJavadoc = fixSelfEnclosingAndEmptyTags(fixedJavadoc);
+        fixedJavadoc = fixSelfInventedAnnotations(fixedJavadoc);
+
+        return fixedJavadoc;
+    }
+
+    // Visible for testing
+    MethodDescription getMethodDescription(DescribedEntity describedEntity) {
+        MethodDescription methodDescription = new MethodDescription();
+        methodDescription.setPresent(false);
+
+        if (!describedEntity.isPresent() || describedEntity.getType() != DescribedEntity.Type.METHOD) {
+            return methodDescription;
+        }
+
+        String methodSignature = describedEntity.getData();
+
+        Matcher beforeParamsMatcher = Pattern.compile(".*?[(]").matcher(methodSignature);
+        Matcher paramsMatcher = Pattern.compile("[(].*?[)]").matcher(methodSignature);
+        Matcher afterParamsMatcher = Pattern.compile("[)].*").matcher(methodSignature);
+
+        if (!beforeParamsMatcher.find() || !paramsMatcher.find()) {
+            return methodDescription;
+        }
+
+        methodDescription.setPresent(true);
+
+        String[] beforeParams = beforeParamsMatcher.group().trim().split(" ");
+        String[] params = paramsMatcher.group().trim().split(", ");
+
+        if (afterParamsMatcher.find()) {
+            String[] afterParams = afterParamsMatcher.group().replaceAll("\\)|[,]", "").trim().split("\\s");
+
+            if (afterParams[0].contains("throws")) {
+                String[] exceptionsThrown = Arrays.copyOfRange(afterParams, 1, afterParams.length);
+                methodDescription.setExceptionsThrown(Arrays.asList(exceptionsThrown));
+            }
+        }
+
+        methodDescription.setReturnType(beforeParams[beforeParams.length - 2]);
+
+        if (params.length > 0) {
+            params[0] = params[0].replaceAll("\\(", "");
+            params[params.length - 1] = params[params.length - 1].replaceAll("\\)", "");
+        }
+
+        methodDescription.setParams(Arrays.asList(params));
+
+        return methodDescription;
     }
 
     // Visible for testing
@@ -72,13 +124,20 @@ public class JavadocFixingHandler {
         int indexOfNextCurlyBracket = fileContent.indexOf("{", javadocEndIndex + 1);
         int indexOfNextSemicolon = fileContent.indexOf(";", javadocEndIndex + 1);
 
-        if (indexOfNextCurlyBracket < 0 || indexOfNextSemicolon > 0 && (indexOfNextCurlyBracket > indexOfNextSemicolon)) {
+        if (indexOfNextCurlyBracket < 0 && indexOfNextSemicolon < 0) {
             describedEntity.setPresent(false);
             return describedEntity;
         }
 
-        describedEntity.setData(fileContent.substring(javadocEndIndex, indexOfNextCurlyBracket));
         describedEntity.setPresent(true);
+
+        if (indexOfNextCurlyBracket > indexOfNextSemicolon && indexOfNextCurlyBracket > 0 && indexOfNextSemicolon > 0) {
+            describedEntity.setType(DescribedEntity.Type.FIELD);
+            describedEntity.setData(fileContent.substring(javadocEndIndex, indexOfNextSemicolon));
+            return describedEntity;
+        }
+
+        describedEntity.setData(fileContent.substring(javadocEndIndex, indexOfNextCurlyBracket));
 
         if (describedEntity.getData().contains(" class ")) {
             describedEntity.setType(DescribedEntity.Type.CLASS);
@@ -301,15 +360,5 @@ public class JavadocFixingHandler {
 
     private boolean noGenerics(String generics) {
         return generics.matches(".*</.+?>.*");
-    }
-
-    private void rewriteFile(File file, String newContent) {
-        try {
-            FileWriter fooWriter = new FileWriter(file, false);
-            fooWriter.write(newContent);
-            fooWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }

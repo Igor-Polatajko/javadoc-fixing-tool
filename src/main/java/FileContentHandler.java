@@ -1,5 +1,7 @@
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Scanner;
 
 public class FileContentHandler {
@@ -18,5 +20,15 @@ public class FileContentHandler {
         }
 
         return fileContent.toString();
+    }
+
+    public static void rewriteFile(File file, String newContent) {
+        try {
+            FileWriter writer = new FileWriter(file, false);
+            writer.write(newContent);
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
