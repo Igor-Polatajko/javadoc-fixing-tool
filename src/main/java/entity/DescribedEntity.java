@@ -1,3 +1,5 @@
+package entity;
+
 public class DescribedEntity {
     private boolean isPresent;
     private Type type;
@@ -27,7 +29,7 @@ public class DescribedEntity {
         this.data = data;
     }
 
-    enum Type {
+    public enum Type {
         METHOD, CLASS, INTERFACE, FIELD
     }
 }

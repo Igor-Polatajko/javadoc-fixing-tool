@@ -1,3 +1,9 @@
+package logic;
+
+import entity.DescribedEntity;
+import entity.MethodDescription;
+import fileHandler.FileContentHandler;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -36,7 +42,7 @@ public class JavadocFixingHandler {
             }
 
             String javadoc = fileContent.substring(javadocStart, javadocEnd);
-            DescribedEntity describedEntity = getDescribedEntity(javadocEnd, fileContent.toString());
+            DescribedEntity describedEntity = EntityParser.getDescribedEntity(javadocEnd, fileContent.toString());
 
             String fixedJavadoc = javadoc;
 
@@ -57,6 +63,7 @@ public class JavadocFixingHandler {
             return javadoc;
         }
 
+        MethodDescription methodDescription = EntityParser.getMethodDescription(describedEntity);
 
         return javadoc;
     }
@@ -70,84 +77,6 @@ public class JavadocFixingHandler {
         fixedJavadoc = fixSelfInventedAnnotations(fixedJavadoc);
 
         return fixedJavadoc;
-    }
-
-    // Visible for testing
-    MethodDescription getMethodDescription(DescribedEntity describedEntity) {
-        MethodDescription methodDescription = new MethodDescription();
-        methodDescription.setPresent(false);
-
-        if (!describedEntity.isPresent() || describedEntity.getType() != DescribedEntity.Type.METHOD) {
-            return methodDescription;
-        }
-
-        String methodSignature = describedEntity.getData();
-
-        Matcher beforeParamsMatcher = Pattern.compile(".*?[(]").matcher(methodSignature);
-        Matcher paramsMatcher = Pattern.compile("[(].*?[)]").matcher(methodSignature);
-        Matcher afterParamsMatcher = Pattern.compile("[)].*").matcher(methodSignature);
-
-        if (!beforeParamsMatcher.find() || !paramsMatcher.find()) {
-            return methodDescription;
-        }
-
-        methodDescription.setPresent(true);
-
-        String[] beforeParams = beforeParamsMatcher.group().trim().split(" ");
-        String[] params = paramsMatcher.group().trim().split(", ");
-
-        if (afterParamsMatcher.find()) {
-            String[] afterParams = afterParamsMatcher.group().replaceAll("\\)|[,]", "").trim().split("\\s");
-
-            if (afterParams[0].contains("throws")) {
-                String[] exceptionsThrown = Arrays.copyOfRange(afterParams, 1, afterParams.length);
-                methodDescription.setExceptionsThrown(Arrays.asList(exceptionsThrown));
-            }
-        }
-
-        methodDescription.setReturnType(beforeParams[beforeParams.length - 2]);
-
-        if (params.length > 0) {
-            params[0] = params[0].replaceAll("\\(", "");
-            params[params.length - 1] = params[params.length - 1].replaceAll("\\)", "");
-        }
-
-        methodDescription.setParams(Arrays.asList(params));
-
-        return methodDescription;
-    }
-
-    // Visible for testing
-    DescribedEntity getDescribedEntity(int javadocEndIndex, String fileContent) {
-        DescribedEntity describedEntity = new DescribedEntity();
-
-        int indexOfNextCurlyBracket = fileContent.indexOf("{", javadocEndIndex + 1);
-        int indexOfNextSemicolon = fileContent.indexOf(";", javadocEndIndex + 1);
-
-        if (indexOfNextCurlyBracket < 0 && indexOfNextSemicolon < 0) {
-            describedEntity.setPresent(false);
-            return describedEntity;
-        }
-
-        describedEntity.setPresent(true);
-
-        if (indexOfNextCurlyBracket > indexOfNextSemicolon && indexOfNextCurlyBracket > 0 && indexOfNextSemicolon > 0) {
-            describedEntity.setType(DescribedEntity.Type.FIELD);
-            describedEntity.setData(fileContent.substring(javadocEndIndex, indexOfNextSemicolon));
-            return describedEntity;
-        }
-
-        describedEntity.setData(fileContent.substring(javadocEndIndex, indexOfNextCurlyBracket));
-
-        if (describedEntity.getData().contains(" class ")) {
-            describedEntity.setType(DescribedEntity.Type.CLASS);
-        } else if (describedEntity.getData().contains(" interface ")) {
-            describedEntity.setType(DescribedEntity.Type.INTERFACE);
-        } else {
-            describedEntity.setType(DescribedEntity.Type.METHOD);
-        }
-
-        return describedEntity;
     }
 
     // Visible for testing
@@ -166,7 +95,6 @@ public class JavadocFixingHandler {
             javadoc = javadoc.replace(tag, fixedTag);
             matcher = pattern.matcher(javadoc);
         }
-
 
         return javadoc;
     }
@@ -187,10 +115,10 @@ public class JavadocFixingHandler {
         while (matcher.find()) {
             String annotation = matcher.group();
 
-            if (!allowedAnnotations.contains(annotation) && !insideTag(javadoc, "a", matcher.start())) {
+            if (!allowedAnnotations.contains(annotation) && !ParserUtils.insideTag(javadoc, "a", matcher.start())) {
                 String replacement =
                         annotation.substring(1, 2).toUpperCase() + annotation.substring(2);
-                javadoc = javadoc.replaceFirst(eliminateSpecialChars(annotation), replacement);
+                javadoc = javadoc.replaceFirst(ParserUtils.eliminateSpecialChars(annotation), replacement);
                 matcher = pattern.matcher(javadoc);
             }
         }
@@ -222,7 +150,7 @@ public class JavadocFixingHandler {
         while (matcher.find()) {
             String notCorrectlyClosedTag = matcher.group();
             String fixedTag = notCorrectlyClosedTag.replaceAll(">", "&gt;");
-            javadoc = javadoc.replaceFirst(eliminateSpecialChars(notCorrectlyClosedTag), fixedTag);
+            javadoc = javadoc.replaceFirst(ParserUtils.eliminateSpecialChars(notCorrectlyClosedTag), fixedTag);
         }
 
         return javadoc;
@@ -236,7 +164,7 @@ public class JavadocFixingHandler {
         while (matcher.find()) {
             String generics = matcher.group();
 
-            if (noGenerics(generics)) {
+            if (ParserUtils.noGenerics(generics)) {
                 continue;
             }
 
@@ -250,10 +178,10 @@ public class JavadocFixingHandler {
             boolean replacementReady = false;
 
             boolean removeGenericsAtAllArea =
-                    insideBlock(javadoc, "@link", matcher.start()) ||
-                            insideBlock(javadoc, "@code", matcher.start()) ||
-                            insideTag(javadoc, "code", matcher.start()) ||
-                            afterWordInOneLine(javadoc, "@see", matcher.start());
+                    ParserUtils.insideBlock(javadoc, "@link", matcher.start()) ||
+                            ParserUtils.insideBlock(javadoc, "@code", matcher.start()) ||
+                            ParserUtils.insideTag(javadoc, "code", matcher.start()) ||
+                            ParserUtils.afterWordInOneLine(javadoc, "@see", matcher.start());
 
             if (removeGenericsAtAllArea) {
                 replacement = classType;
@@ -288,77 +216,9 @@ public class JavadocFixingHandler {
                 }
             }
 
-            javadoc = javadoc.replaceFirst(eliminateSpecialChars(generics), replacement);
+            javadoc = javadoc.replaceFirst(ParserUtils.eliminateSpecialChars(generics), replacement);
             matcher = pattern.matcher(javadoc);
         }
         return javadoc;
-    }
-
-    private boolean insideBlock(String javadoc, String blockType, int index) {
-        int indexOfBlockTypeStartInsideJavadoc = -1;
-
-        while (true) {
-            indexOfBlockTypeStartInsideJavadoc = javadoc.indexOf(blockType, indexOfBlockTypeStartInsideJavadoc + 1);
-            int indexOfBlockTypeEndInsideJavadoc = javadoc.indexOf("}", indexOfBlockTypeStartInsideJavadoc + 1);
-
-            if (indexOfBlockTypeStartInsideJavadoc < 0 || indexOfBlockTypeEndInsideJavadoc < 0) {
-                return false;
-            }
-
-            if (index > indexOfBlockTypeStartInsideJavadoc && index < indexOfBlockTypeEndInsideJavadoc) {
-                return true;
-            }
-        }
-    }
-
-    private boolean insideTag(String javadoc, String tag, int index) {
-        Pattern startTagPattern = Pattern.compile("<" + tag + ".*?>");
-        Pattern endTagPattern = Pattern.compile("</" + tag + "");
-
-        Matcher startTagMatcher = startTagPattern.matcher(javadoc);
-        Matcher endTagMatcher = endTagPattern.matcher(javadoc);
-
-        while (startTagMatcher.find() && endTagMatcher.find()) {
-            if (endTagMatcher.start() > startTagMatcher.start() &&
-                    endTagMatcher.start() > index && startTagMatcher.start() < index) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private boolean afterWordInOneLine(String javadoc, String word, int index) {
-        int indexOfWordStart = -1;
-
-        while (true) {
-            indexOfWordStart = javadoc.indexOf(word, indexOfWordStart + 1);
-            int indexOfNewLine = javadoc.indexOf("\n", indexOfWordStart + 1);
-
-            if (indexOfWordStart < 0 || indexOfNewLine < 0) {
-                return false;
-            }
-
-            if (index > indexOfWordStart && index < indexOfNewLine) {
-                return true;
-            }
-        }
-    }
-
-    private String eliminateSpecialChars(String regex) {
-        String result = "";
-        for (int i = 0; i < regex.length(); i++) {
-            if (regex.charAt(i) == ']' || regex.charAt(i) == '[') {
-                result += "[\\" + regex.charAt(i) + "]";
-            } else {
-                result += "[" + regex.charAt(i) + "]";
-            }
-        }
-
-        return result;
-    }
-
-    private boolean noGenerics(String generics) {
-        return generics.matches(".*</.+?>.*");
     }
 }

@@ -1,3 +1,7 @@
+import fileHandler.SourceFilesResolver;
+import logic.JavadocFixingHandler;
+import logic.Utils;
+
 import java.io.File;
 import java.util.List;
 import java.util.Scanner;
