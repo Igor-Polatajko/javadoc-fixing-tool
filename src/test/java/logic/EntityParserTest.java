@@ -2,7 +2,6 @@ package logic;
 
 import entity.DescribedEntity;
 import entity.MethodDescription;
-import logic.EntityParser;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -34,8 +33,67 @@ public class EntityParserTest {
                 "}\n" +
                 "\n";
 
+        String expectedData = "*/        void m() throws Exception ";
+
+        DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(167, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.METHOD, resultDescribedEntity.getType());
+        assertEquals(expectedData, resultDescribedEntity.getData());
+    }
+
+    @Test
+    public void getDescribedEntity_successFlow_method_curlyBracketOnNewLine() {
+        String testValue = "public class App {\n" +
+                "\n" +
+                "\n" +
+                "    /**\n" +
+                "     * a and b\n" +
+                "     * Map  (String - key,  String - value)\n" +
+                "     *     {@code Map }\n" +
+                "     *         Collection of generics type String\n" +
+                "     */\n" +
+                "    @Annotation\n" +
+                "    void m()\n" +
+                " throws Exception {\n" +
+                "\n" +
+                "\n" +
+                "    }\n" +
+                "\n" +
+                "}\n" +
+                "\n";
+
+        String expectedData = "*/        void m() throws Exception ";
+
+        DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(167, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.METHOD, resultDescribedEntity.getType());
+        assertEquals(expectedData, resultDescribedEntity.getData());
+    }
+
+    @Test
+    public void getDescribedEntity_successFlow_method_declarationOnly() {
+        String testValue = "public class App {\n" +
+                "\n" +
+                "\n" +
+                "    /**\n" +
+                "     * a and b\n" +
+                "     * Map  (String - key,  String - value)\n" +
+                "     *     {@code Map }\n" +
+                "     *         Collection of generics type String\n" +
+                "     */\n" +
+                "    @Annotation\n" +
+                "    void m() throws Exception;\n" +
+                "\n" +
+                "\n" +
+                "    }\n" +
+                "\n" +
+                "}\n" +
+                "\n";
+
         String expectedData = "*/\n" +
-                "        void m() throws Exception ";
+                "        void m() throws Exception";
 
         DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(167, testValue);
 
@@ -106,8 +164,7 @@ public class EntityParserTest {
                 "    }\n" +
                 "}\n" +
                 "\n";
-        String expectedData = "*/\n" +
-                "public class App ";
+        String expectedData = "*/public class App ";
 
         DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(16, testValue);
 
@@ -128,8 +185,7 @@ public class EntityParserTest {
                 "}\n" +
                 "\n";
 
-        String expectedData = "*/\n" +
-                "public interface App ";
+        String expectedData = "*/public interface App ";
 
         DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(16, testValue);
 
@@ -145,8 +201,7 @@ public class EntityParserTest {
                 " */\n" +
                 "context.checking(new Expectations() {}";
 
-        String expectedData = "*/\n" +
-                "context.checking(new Expectations() ";
+        String expectedData = "*/context.checking(new Expectations() ";
 
         DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(16, testValue);
 

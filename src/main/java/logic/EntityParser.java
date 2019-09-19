@@ -8,6 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static logic.ParserUtils.skipJavaAnnotations;
+import static logic.ParserUtils.skipNewLines;
 
 public class EntityParser {
     static MethodDescription getMethodDescription(DescribedEntity describedEntity) {
@@ -56,6 +57,7 @@ public class EntityParser {
 
     static DescribedEntity getDescribedEntity(int javadocEndIndex, String fileContent) {
         DescribedEntity describedEntity = new DescribedEntity();
+        String methodRegex = "[^.]*?\\w*?\\s\\w*?[(].*?[)][^{]*";
 
         int indexOfNextCurlyBracket = fileContent.indexOf("{", javadocEndIndex + 1);
         int indexOfNextSemicolon = fileContent.indexOf(";", javadocEndIndex + 1);
@@ -68,18 +70,26 @@ public class EntityParser {
         describedEntity.setPresent(true);
 
         if ((indexOfNextCurlyBracket > indexOfNextSemicolon || indexOfNextCurlyBracket < 0) && indexOfNextSemicolon > 0) {
-            describedEntity.setType(DescribedEntity.Type.FIELD);
-            describedEntity.setData(fileContent.substring(javadocEndIndex, indexOfNextSemicolon));
+            describedEntity.setData(skipJavaAnnotations(fileContent.substring(javadocEndIndex, indexOfNextSemicolon)));
+
+            if (describedEntity.getData().matches(methodRegex)) {
+                describedEntity.setType(DescribedEntity.Type.METHOD);
+            } else {
+                describedEntity.setType(DescribedEntity.Type.FIELD);
+            }
+
             return describedEntity;
         }
 
-        describedEntity.setData(skipJavaAnnotations(fileContent.substring(javadocEndIndex, indexOfNextCurlyBracket)));
+        describedEntity.setData(
+                skipNewLines(
+                        skipJavaAnnotations(fileContent.substring(javadocEndIndex, indexOfNextCurlyBracket))));
 
         if (describedEntity.getData().contains(" class ")) {
             describedEntity.setType(DescribedEntity.Type.CLASS);
         } else if (describedEntity.getData().contains(" interface ")) {
             describedEntity.setType(DescribedEntity.Type.INTERFACE);
-        } else if (describedEntity.getData().matches("[^.(]*?\\w\\s[^.]*?[(].*")) {
+        } else if (describedEntity.getData().matches(methodRegex)) {
             describedEntity.setType(DescribedEntity.Type.METHOD);
         } else {
             describedEntity.setType(DescribedEntity.Type.ANOTHER);

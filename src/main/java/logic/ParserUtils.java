@@ -1,5 +1,7 @@
 package logic;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -75,5 +77,21 @@ public class ParserUtils {
 
     static String skipJavaAnnotations (String data) {
         return data.replaceAll("[@][A-Za-z0-9].*?[\\n]", "");
+    }
+
+    static String skipNewLines (String data) {
+        return data.replaceAll("[\\n]", "");
+    }
+
+    static List<String> getThrowsStatements (String javadoc) {
+        List<String> javadocThrows = new ArrayList<>();
+        Pattern pattern = Pattern.compile("[@]throws\\s[A-Za-z0-9].*");
+        Matcher matcher = pattern.matcher(javadoc);
+
+        while (matcher.find()) {
+            javadocThrows.add(matcher.group());
+        }
+
+        return javadocThrows;
     }
 }

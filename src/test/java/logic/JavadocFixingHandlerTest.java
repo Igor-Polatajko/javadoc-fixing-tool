@@ -5,6 +5,8 @@ import logic.JavadocFixingHandler;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -151,11 +153,10 @@ public class JavadocFixingHandlerTest {
     @Test
     public void fixReturnWithVoidMethod() {
         String testValue = "/**\n" +
-                "     @return result\n" +
+                "*     @return result\n" +
                 "*/";
 
         String expectedValue = "/**\n" +
-                "     \n" +
                 "*/";
 
         MethodDescription testMethodDescription = new MethodDescription();
@@ -163,6 +164,30 @@ public class JavadocFixingHandlerTest {
         testMethodDescription.setReturnType("void");
 
         String actualValue = javadocFixingHandler.fixReturnWithVoidMethod(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixThrowsStatements() {
+        String testValue = "/**\n" +
+                "     *\n" +
+                "     * @throws Exception - occurs when something happened\n" +
+                "     * @throws RuntimeException\n" +
+                "     * @throws IOException\n" +
+                "     */\n";
+
+        String expectedValue = "/**\n" +
+                "     *\n" +
+                "     * @throws Exception - occurs when something happened\n" +
+                "     * @throws IOException - exception\n" +
+                "     * @throws FileNotFoundException - exception\n" +
+                "     */\n";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setExceptionsThrown(Arrays.asList("Exception", "FileNotFoundException", "IOException"));
+
+        String actualValue = javadocFixingHandler.fixThrowsStatements(testValue, testMethodDescription);
 
         assertEquals(expectedValue, actualValue);
     }

@@ -7,14 +7,19 @@ import fileHandler.FileContentHandler;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static logic.ParserUtils.eliminateSpecialChars;
+import static logic.ParserUtils.getThrowsStatements;
 
 public class JavadocFixingHandler {
 
     private final static String START_PATTERN = "/**";
     private final static String END_PATTERN = "*/";
+    private final static String LINE_BEGIN_PATTERN = "[\\n].*?[*][^*]*?";
 
     public void fix(File file) {
         String fileContent = FileContentHandler.getFileContent(file);
@@ -64,8 +69,12 @@ public class JavadocFixingHandler {
         }
         MethodDescription methodDescription = EntityParser.getMethodDescription(describedEntity);
 
+        if (!methodDescription.isPresent()) {
+            return javadoc;
+        }
+
         String fixedJavadoc = fixReturnWithVoidMethod(javadoc, methodDescription);
-        // ToDo add another fixes
+        fixedJavadoc = fixThrowsStatements(fixedJavadoc, methodDescription);
         return fixedJavadoc;
     }
 
@@ -81,12 +90,45 @@ public class JavadocFixingHandler {
     }
 
     // Visible for testing
-    String fixReturnWithVoidMethod(String javadoc, MethodDescription methodDescription){
-        if (!methodDescription.isPresent() || !methodDescription.getReturnType().equals("void")) {
+    String fixReturnWithVoidMethod(String javadoc, MethodDescription methodDescription) {
+        if (!methodDescription.getReturnType().equals("void")) {
             return javadoc;
         }
 
-        return javadoc.replaceAll("[@]return.*", "");
+        return javadoc.replaceAll(LINE_BEGIN_PATTERN + "[@]return.*", "");
+    }
+
+    // Visible for testing
+    String fixThrowsStatements(String javadoc, MethodDescription methodDescription) {
+        List<String> javadocThrows = getThrowsStatements(javadoc);
+
+        for (String javadocThrow : javadocThrows) {
+            String[] javadocThrowParts = javadocThrow.trim().split("\\s");
+            String exceptionName = javadocThrowParts[1];
+
+            if (methodDescription.getExceptionsThrown() == null || !methodDescription.getExceptionsThrown().contains(exceptionName)) {
+                javadoc = javadoc.replaceFirst(LINE_BEGIN_PATTERN + eliminateSpecialChars(javadocThrow), "");
+                continue;
+            }
+
+            if (javadocThrowParts.length < 3) {
+                javadoc = javadoc.replaceFirst(eliminateSpecialChars(javadocThrow), javadocThrow + " - exception");
+            }
+        }
+
+        if (methodDescription.getExceptionsThrown() == null) {
+            return javadoc;
+        }
+
+        for (String exception : methodDescription.getExceptionsThrown()) {
+            boolean throwsPresentedInJavadoc = javadocThrows.stream().anyMatch(th -> th.contains(exception));
+
+            if (!throwsPresentedInJavadoc) {
+                javadoc = javadoc.replaceFirst("[*][/]", "* @throws " + exception + " - exception\n     */");
+            }
+        }
+
+        return javadoc;
     }
 
     // Visible for testing
