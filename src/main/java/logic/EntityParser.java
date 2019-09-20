@@ -57,7 +57,8 @@ public class EntityParser {
 
     static DescribedEntity getDescribedEntity(int javadocEndIndex, String fileContent) {
         DescribedEntity describedEntity = new DescribedEntity();
-        String methodRegex = "[^.]*?\\w*?\\s\\w*?[(].*?[)][^{]*";
+        String methodRegex = "[^.]*?[A-Za-z0-9_<>]+?\\s+?\\w+?[(][^.]*?[)][^.]*";
+        String fieldRegex = "[^.]*?[A-Za-z0-9_<>]+?\\s+?\\w+?";
 
         int indexOfNextCurlyBracket = fileContent.indexOf("{", javadocEndIndex + 1);
         int indexOfNextSemicolon = fileContent.indexOf(";", javadocEndIndex + 1);
@@ -70,12 +71,15 @@ public class EntityParser {
         describedEntity.setPresent(true);
 
         if ((indexOfNextCurlyBracket > indexOfNextSemicolon || indexOfNextCurlyBracket < 0) && indexOfNextSemicolon > 0) {
-            describedEntity.setData(skipJavaAnnotations(fileContent.substring(javadocEndIndex, indexOfNextSemicolon)));
+            describedEntity.setData(skipNewLines
+                    (skipJavaAnnotations(fileContent.substring(javadocEndIndex, indexOfNextSemicolon))));
 
             if (describedEntity.getData().matches(methodRegex)) {
                 describedEntity.setType(DescribedEntity.Type.METHOD);
-            } else {
+            } else if (describedEntity.getData().matches(fieldRegex)) {
                 describedEntity.setType(DescribedEntity.Type.FIELD);
+            } else {
+                describedEntity.setType(DescribedEntity.Type.ANOTHER);
             }
 
             return describedEntity;

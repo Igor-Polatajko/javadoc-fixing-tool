@@ -1,15 +1,12 @@
 package logic;
 
 import entity.MethodDescription;
-import logic.JavadocFixingHandler;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class JavadocFixingHandlerTest {
 
@@ -175,14 +172,14 @@ public class JavadocFixingHandlerTest {
                 "     * @throws Exception - occurs when something happened\n" +
                 "     * @throws RuntimeException\n" +
                 "     * @throws IOException\n" +
-                "     */\n";
+                "     */";
 
         String expectedValue = "/**\n" +
                 "     *\n" +
                 "     * @throws Exception - occurs when something happened\n" +
                 "     * @throws IOException - exception\n" +
-                "     * @throws FileNotFoundException - exception\n" +
-                "     */\n";
+                "     * @throws FileNotFoundException - exception\n     " +
+                "*/";
 
         MethodDescription testMethodDescription = new MethodDescription();
         testMethodDescription.setExceptionsThrown(Arrays.asList("Exception", "FileNotFoundException", "IOException"));

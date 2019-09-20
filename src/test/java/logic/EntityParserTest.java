@@ -92,8 +92,7 @@ public class EntityParserTest {
                 "}\n" +
                 "\n";
 
-        String expectedData = "*/\n" +
-                "        void m() throws Exception";
+        String expectedData = "*/        void m() throws Exception";
 
         DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(167, testValue);
 
@@ -120,8 +119,7 @@ public class EntityParserTest {
                 "}\n" +
                 "\n";
 
-        String expectedData = "*/\n" +
-                "    String field";
+        String expectedData = "*/    String field";
 
         DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(65, testValue);
 
@@ -141,8 +139,7 @@ public class EntityParserTest {
                 "    String field; \n";
 
 
-        String expectedData = "*/\n" +
-                "    String field";
+        String expectedData = "*/    String field";
 
         DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(65, testValue);
 
@@ -208,6 +205,38 @@ public class EntityParserTest {
         assertTrue(resultDescribedEntity.isPresent());
         assertEquals(DescribedEntity.Type.ANOTHER, resultDescribedEntity.getType());
         assertEquals(expectedData, resultDescribedEntity.getData());
+    }
+
+    @Test
+    public void getDescribedEntity_successFlow_another_enumProblem1() {
+        String testValue = "/** 123 */\n" +
+                "    XX1(\"123\"),\n" +
+                "    /** 123 */\n" +
+                "    XX2(\"123\"),\n" +
+                "    /** 123 */\n" +
+                "    XX3(\"123\"),\n" +
+                "    /** 123 */\n" +
+                "    XX4(\"123\"),\n" +
+                "    /** 123 */\n" +
+                "    XX5(\"123\");";
+
+        DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(10, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.ANOTHER, resultDescribedEntity.getType());
+    }
+
+    @Test
+    public void getDescribedEntity_successFlow_another_enumProblem2() {
+        String testValue = "/**\n" +
+                "     * xxx\n" +
+                "     */\n" +
+                "    XXX(xxxx);";
+
+        DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(24, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.ANOTHER, resultDescribedEntity.getType());
     }
 
     @Test

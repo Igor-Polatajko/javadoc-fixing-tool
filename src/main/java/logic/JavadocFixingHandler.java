@@ -40,7 +40,7 @@ public class JavadocFixingHandler {
 
         while (true) {
             javadocStart = fileContent.indexOf(START_PATTERN, javadocStart + 1);
-            javadocEnd = fileContent.indexOf(END_PATTERN, javadocStart + 1);
+            javadocEnd = fileContent.indexOf(END_PATTERN, javadocStart + 1) + END_PATTERN.length();
 
             if (javadocStart < 0 || javadocEnd < 0) {
                 break;
