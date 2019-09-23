@@ -188,4 +188,25 @@ public class JavadocFixingHandlerTest {
 
         assertEquals(expectedValue, actualValue);
     }
+
+    @Test
+    public void fixThrowsStatements_fullExceptionNameCase() {
+        String testValue = "/**\n" +
+                "     *\n" +
+                "     * @throws java.io.IOException\n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     *\n" +
+                "     * @throws java.io.IOException - exception\n" +
+                "     * @throws Exception - exception\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setExceptionsThrown(Arrays.asList("Exception", "IOException"));
+
+        String actualValue = javadocFixingHandler.fixThrowsStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
 }

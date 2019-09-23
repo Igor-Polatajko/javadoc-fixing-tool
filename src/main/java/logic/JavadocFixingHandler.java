@@ -106,7 +106,10 @@ public class JavadocFixingHandler {
             String[] javadocThrowParts = javadocThrow.trim().split("\\s");
             String exceptionName = javadocThrowParts[1];
 
-            if (methodDescription.getExceptionsThrown() == null || !methodDescription.getExceptionsThrown().contains(exceptionName)) {
+            boolean thrown = methodDescription.getExceptionsThrown().stream()
+                    .anyMatch(ex -> exceptionName.matches("[^<]*\\b" + ex + "\\b[^<]*"));
+
+            if (methodDescription.getExceptionsThrown().isEmpty() || !thrown) {
                 javadoc = javadoc.replaceFirst(LINE_BEGIN_PATTERN + eliminateSpecialChars(javadocThrow), "");
                 continue;
             }
@@ -121,7 +124,8 @@ public class JavadocFixingHandler {
         }
 
         for (String exception : methodDescription.getExceptionsThrown()) {
-            boolean throwsPresentedInJavadoc = javadocThrows.stream().anyMatch(th -> th.contains(exception));
+            boolean throwsPresentedInJavadoc = javadocThrows.stream()
+                    .anyMatch(th -> th.matches("[^<]*\\b" + exception + "\\b[^<]*"));
 
             if (!throwsPresentedInJavadoc) {
                 javadoc = javadoc.replaceFirst("[*][/]", "* @throws " + exception + " - exception\n     */");

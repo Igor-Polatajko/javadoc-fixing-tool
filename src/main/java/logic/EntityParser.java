@@ -4,6 +4,7 @@ import entity.DescribedEntity;
 import entity.MethodDescription;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,6 +41,8 @@ public class EntityParser {
             if (afterParams[0].contains("throws")) {
                 String[] exceptionsThrown = Arrays.copyOfRange(afterParams, 1, afterParams.length);
                 methodDescription.setExceptionsThrown(Arrays.asList(exceptionsThrown));
+            } else {
+                methodDescription.setExceptionsThrown(Collections.emptyList());
             }
         }
 
