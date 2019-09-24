@@ -73,7 +73,7 @@ public class JavadocFixingHandler {
             return javadoc;
         }
 
-        String fixedJavadoc = fixReturnWithVoidMethod(javadoc, methodDescription);
+        String fixedJavadoc = fixReturnStatements(javadoc, methodDescription);
         fixedJavadoc = fixThrowsStatements(fixedJavadoc, methodDescription);
         return fixedJavadoc;
     }
@@ -87,15 +87,6 @@ public class JavadocFixingHandler {
         fixedJavadoc = fixSelfInventedAnnotations(fixedJavadoc);
 
         return fixedJavadoc;
-    }
-
-    // Visible for testing
-    String fixReturnWithVoidMethod(String javadoc, MethodDescription methodDescription) {
-        if (!methodDescription.getReturnType().equals("void")) {
-            return javadoc;
-        }
-
-        return javadoc.replaceAll(LINE_BEGIN_PATTERN + "[@]return.*", "");
     }
 
     // Visible for testing
@@ -130,6 +121,34 @@ public class JavadocFixingHandler {
             if (!throwsPresentedInJavadoc) {
                 javadoc = javadoc.replaceFirst("[*][/]", "* @throws " + exception + " - exception\n     */");
             }
+        }
+
+        return javadoc;
+    }
+
+    String fixReturnStatements(String javadoc, MethodDescription methodDescription) {
+        if (methodDescription.getReturnType().equals("void")) {
+            javadoc = javadoc.replaceAll(LINE_BEGIN_PATTERN + "[@]return.*", "");
+            return javadoc;
+        }
+
+        int indexOfReturn = javadoc.indexOf("@return");
+
+        if (indexOfReturn < 0) {
+            String returnStatement = "* @return " + methodDescription.getReturnType() + "\n     ";
+            int indexOfThrows = javadoc.indexOf("* @throws");
+            if (indexOfThrows < 0) {
+                javadoc = javadoc.replaceFirst("[*][/]", returnStatement + "*/");
+            } else {
+                javadoc = javadoc.substring(0, indexOfThrows) + returnStatement + javadoc.substring(indexOfThrows);
+            }
+            return javadoc;
+        }
+
+        boolean noDescriptionForReturn = javadoc.substring(indexOfReturn).matches("@return[^\\w]*?[*][^$]*");
+        if (noDescriptionForReturn) {
+            int indexOfReturnEnd = indexOfReturn + 7;
+            javadoc = javadoc.substring(0, indexOfReturnEnd) + " " + methodDescription.getReturnType() + javadoc.substring(indexOfReturnEnd);
         }
 
         return javadoc;

@@ -148,7 +148,7 @@ public class JavadocFixingHandlerTest {
     }
 
     @Test
-    public void fixReturnWithVoidMethod() {
+    public void fixReturnStatements_void() {
         String testValue = "/**\n" +
                 "*     @return result\n" +
                 "*/";
@@ -160,10 +160,91 @@ public class JavadocFixingHandlerTest {
         testMethodDescription.setPresent(true);
         testMethodDescription.setReturnType("void");
 
-        String actualValue = javadocFixingHandler.fixReturnWithVoidMethod(testValue, testMethodDescription);
+        String actualValue = javadocFixingHandler.fixReturnStatements(testValue, testMethodDescription);
 
         assertEquals(expectedValue, actualValue);
     }
+
+    @Test
+    public void fixReturnStatements_noReturn() {
+        String testValue = "/**\n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * @return Object\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setPresent(true);
+        testMethodDescription.setReturnType("Object");
+
+        String actualValue = javadocFixingHandler.fixReturnStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixReturnStatements_noReturn_throwsPresented() {
+        String testValue = "/**\n" +
+                "     * @throws IOException\n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * @return Object\n" +
+                "     * @throws IOException\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setPresent(true);
+        testMethodDescription.setReturnType("Object");
+
+        String actualValue = javadocFixingHandler.fixReturnStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixReturnStatements_noDescription() {
+        String testValue = "/**\n" +
+                "     * @return\n" +
+                "     * @throws IOException\n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * @return Object\n" +
+                "     * @throws IOException\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setPresent(true);
+        testMethodDescription.setReturnType("Object");
+
+        String actualValue = javadocFixingHandler.fixReturnStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixReturnStatements_noChanges() {
+        String testValue = "/**\n" +
+                "     * @return Object\n" +
+                "     * @throws IOException\n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * @return Object\n" +
+                "     * @throws IOException\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setPresent(true);
+        testMethodDescription.setReturnType("Object");
+
+        String actualValue = javadocFixingHandler.fixReturnStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
 
     @Test
     public void fixThrowsStatements() {
