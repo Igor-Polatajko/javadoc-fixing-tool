@@ -30,6 +30,6 @@ public class DescribedEntity {
     }
 
     public enum Type {
-        METHOD, CLASS, INTERFACE, FIELD, ANOTHER
+        METHOD, CLASS, INTERFACE, FIELD, CONSTRUCTOR, ANOTHER
     }
 }

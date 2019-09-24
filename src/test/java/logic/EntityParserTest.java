@@ -192,6 +192,35 @@ public class EntityParserTest {
     }
 
     @Test
+    public void getDescribedEntity_successFlow_constructor() {
+        String testValue = "public class App {\n" +
+                "\n" +
+                "\n" +
+                "    /**\n" +
+                "     * a and b\n" +
+                "     * Map  (String - key,  String - value)\n" +
+                "     *     {@code Map }\n" +
+                "     *         Collection of generics type String\n" +
+                "     */\n" +
+                "    @Annotation\n" +
+                "    public Class() {\n" +
+                "\n" +
+                "\n" +
+                "    }\n" +
+                "\n" +
+                "}\n" +
+                "\n";
+
+        String expectedData = "*/        public Class() ";
+
+        DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(167, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.CONSTRUCTOR, resultDescribedEntity.getType());
+        assertEquals(expectedData, resultDescribedEntity.getData());
+    }
+
+    @Test
     public void getDescribedEntity_successFlow_another() {
         String testValue = "/**\n" +
                 " * Javadoc\n" +
@@ -245,14 +274,32 @@ public class EntityParserTest {
         testDescribedEntity.setType(DescribedEntity.Type.METHOD);
         testDescribedEntity.setPresent(true);
         testDescribedEntity.setData("public Set<String> method(List<String> strings, Integer integer)" +
-                " throws Exception, SQLException, FileNotFoundException");
+                " throws Exception, IOException,SQLException,     FileNotFoundException");
         List<String> expectedParams = Arrays.asList("List<String> strings", "Integer integer");
-        List<String> expectedExceptionsThrown = Arrays.asList("Exception", "SQLException", "FileNotFoundException");
+        List<String> expectedExceptionsThrown = Arrays.asList("Exception", "IOException", "SQLException", "FileNotFoundException");
 
         MethodDescription resultMethodDescription = EntityParser.getMethodDescription(testDescribedEntity);
 
         assertTrue(resultMethodDescription.isPresent());
         assertEquals("Set<String>", resultMethodDescription.getReturnType());
+        assertListEquals(expectedParams, resultMethodDescription.getParams());
+        assertListEquals(expectedExceptionsThrown, resultMethodDescription.getExceptionsThrown());
+    }
+
+    @Test
+    public void getMethodDescription_successFlow_twoArgsGenericsReturnType() {
+        DescribedEntity testDescribedEntity = new DescribedEntity();
+        testDescribedEntity.setType(DescribedEntity.Type.METHOD);
+        testDescribedEntity.setPresent(true);
+        testDescribedEntity.setData("Map<String, String> method(Integer integer)" +
+                " throws Exception, IOException");
+        List<String> expectedParams = Collections.singletonList("Integer integer");
+        List<String> expectedExceptionsThrown = Arrays.asList("Exception", "IOException");
+
+        MethodDescription resultMethodDescription = EntityParser.getMethodDescription(testDescribedEntity);
+
+        assertTrue(resultMethodDescription.isPresent());
+        assertEquals("Map<String, String>", resultMethodDescription.getReturnType());
         assertListEquals(expectedParams, resultMethodDescription.getParams());
         assertListEquals(expectedExceptionsThrown, resultMethodDescription.getExceptionsThrown());
     }

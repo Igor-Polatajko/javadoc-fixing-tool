@@ -151,6 +151,23 @@ public class JavadocFixingHandler {
             javadoc = javadoc.substring(0, indexOfReturnEnd) + " " + methodDescription.getReturnType() + javadoc.substring(indexOfReturnEnd);
         }
 
+        javadoc = fixDoubleReturns(javadoc, indexOfReturn);
+
+        return javadoc;
+    }
+
+    private String fixDoubleReturns(String javadoc, int indexOfReturn) {
+        int indexOfNextReturnStatement = indexOfReturn + 7;
+        while (true) {
+            indexOfNextReturnStatement = javadoc.indexOf("@return", indexOfNextReturnStatement + 1);
+
+            if (indexOfNextReturnStatement < 0) {
+                break;
+            }
+
+            javadoc = javadoc.substring(0, indexOfNextReturnStatement - 1) + javadoc.substring(indexOfNextReturnStatement + 7);
+        }
+
         return javadoc;
     }
 

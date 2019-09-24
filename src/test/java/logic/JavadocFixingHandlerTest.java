@@ -64,13 +64,13 @@ public class JavadocFixingHandlerTest {
         String testValue = "/**\n" +
                 "     * &lt;complexContent>\n" +
                 "     * &lt;complexContent{}>\n" +
-                "     * &lt;complexContent\"\">\n" +
+                "     * &lt;complexContent\"123\">\n" +
                 "*/";
 
         String expectedValue = "/**\n" +
                 "     * &lt;complexContent&gt;\n" +
                 "     * &lt;complexContent{}&gt;\n" +
-                "     * &lt;complexContent\"\"&gt;\n" +
+                "     * &lt;complexContent\"123\"&gt;\n" +
                 "*/";
 
         String actualValue = javadocFixingHandler.fixIncompleteTags(testValue);
@@ -212,6 +212,73 @@ public class JavadocFixingHandlerTest {
 
         String expectedValue = "/**\n" +
                 "     * @return Object\n" +
+                "     * @throws IOException\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setPresent(true);
+        testMethodDescription.setReturnType("Object");
+
+        String actualValue = javadocFixingHandler.fixReturnStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixReturnStatements_doubleReturn_case1() {
+        String testValue = "/**\n" +
+                "     * @return some result\n" +
+                "     * @return\n" +
+                "     * @throws IOException\n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * @return some result\n" +
+                "     *\n" +
+                "     * @throws IOException\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setPresent(true);
+        testMethodDescription.setReturnType("Object");
+
+        String actualValue = javadocFixingHandler.fixReturnStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixReturnStatements_doubleReturn_case2() {
+        String testValue = "/**\n" +
+                "     * @return some result\n" +
+                "     * @return some result\n" +
+                "     * @throws IOException\n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * @return some result\n" +
+                "     * some result\n" +
+                "     * @throws IOException\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setPresent(true);
+        testMethodDescription.setReturnType("Object");
+
+        String actualValue = javadocFixingHandler.fixReturnStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixReturnStatements_doubleReturn_case3() {
+        String testValue = "/**\n" +
+                "     * @return @return some result\n" +
+                "     * @throws IOException\n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * @return some result\n" +
                 "     * @throws IOException\n" +
                 "     */";
 
