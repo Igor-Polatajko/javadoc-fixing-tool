@@ -5,6 +5,7 @@ import entity.MethodDescription;
 import fileHandler.FileContentHandler;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -13,7 +14,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static logic.ParserUtils.eliminateSpecialChars;
-import static logic.ParserUtils.getThrowsStatements;
+import static logic.ParserUtils.genericsFix;
+import static logic.ParserUtils.getStatements;
 
 public class JavadocFixingHandler {
 
@@ -75,6 +77,7 @@ public class JavadocFixingHandler {
 
         String fixedJavadoc = fixReturnStatements(javadoc, methodDescription);
         fixedJavadoc = fixThrowsStatements(fixedJavadoc, methodDescription);
+        fixedJavadoc = fixParamStatements(fixedJavadoc, methodDescription);
         return fixedJavadoc;
     }
 
@@ -90,8 +93,61 @@ public class JavadocFixingHandler {
     }
 
     // Visible for testing
+    String fixParamStatements(String javadoc, MethodDescription methodDescription) {
+        List<String> javadocParams = getStatements(javadoc, "param");
+        List<List<String>> methodParams = new ArrayList<>();
+
+        for (String param : methodDescription.getParams()) {
+            methodParams.add(new ArrayList<>(genericsFix(param.split(" "))));
+        }
+
+        for (String javadocParam : javadocParams) {
+            List<String> validJavadocParameterName = methodParams.stream()
+                    .filter(p -> javadocParam.matches("[^<]*\\b" + p.get(1) + "\\b[^<]*")).findAny().orElse(null);
+
+            if (validJavadocParameterName == null) {
+                javadoc = javadoc.replaceFirst(LINE_BEGIN_PATTERN + eliminateSpecialChars(javadocParam), "");
+                continue;
+            }
+
+            if (javadocParam.split(" ").length < 3) {
+                String replacement = "@param " + validJavadocParameterName.get(1) + " - the " +
+                        validJavadocParameterName.get(1) + " (" + validJavadocParameterName.get(0) + ")";
+
+                javadoc = javadoc.replaceFirst(eliminateSpecialChars(javadocParam), replacement);
+            }
+        }
+
+        if (methodParams.isEmpty()) {
+            return javadoc;
+        }
+
+        int indexOfFirstStatementMark = javadoc.indexOf("@");
+
+        for (List<String> param : methodParams) {
+            boolean paramPresentedInJavadoc = javadocParams.stream()
+                    .anyMatch(p -> p.matches("[^<]*\\b" + param.get(1) + "\\b[^<]*"));
+
+            if (!paramPresentedInJavadoc) {
+                // ToDo fix bug with incorrect param here
+                String parameterStatement = "@param " + param.get(1) + " - the " + param.get(1) + " (" + param.get(0) + ")\n";
+
+                if (indexOfFirstStatementMark > 0) {
+                    javadoc = javadoc.substring(0, indexOfFirstStatementMark) + parameterStatement + "     * "
+                            + javadoc.substring(indexOfFirstStatementMark);
+                } else {
+                    javadoc = javadoc.replaceFirst("[*][/]",
+                            "* " + parameterStatement + "     */");
+                }
+            }
+        }
+
+        return javadoc;
+    }
+
+    // Visible for testing
     String fixThrowsStatements(String javadoc, MethodDescription methodDescription) {
-        List<String> javadocThrows = getThrowsStatements(javadoc);
+        List<String> javadocThrows = getStatements(javadoc, "throws");
 
         for (String javadocThrow : javadocThrows) {
             String[] javadocThrowParts = javadocThrow.trim().split("\\s");
@@ -110,7 +166,7 @@ public class JavadocFixingHandler {
             }
         }
 
-        if (methodDescription.getExceptionsThrown() == null) {
+        if (methodDescription.getExceptionsThrown().isEmpty()) {
             return javadoc;
         }
 

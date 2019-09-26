@@ -75,23 +75,40 @@ public class ParserUtils {
         return generics.matches(".*</.+?>.*");
     }
 
-    static String skipJavaAnnotations (String data) {
+    static String skipJavaAnnotations(String data) {
         return data.replaceAll("[@][A-Za-z0-9].*?[\\n]", "");
     }
 
-    static String skipNewLines (String data) {
+    static String skipNewLines(String data) {
         return data.replaceAll("[\\n]", "");
     }
 
-    static List<String> getThrowsStatements (String javadoc) {
-        List<String> javadocThrows = new ArrayList<>();
-        Pattern pattern = Pattern.compile("[@]throws\\s[A-Za-z0-9].*");
+    static List<String> getStatements(String javadoc, String statement) {
+        List<String> statementsList = new ArrayList<>();
+        Pattern pattern = Pattern.compile("[@]" + statement + "\\s[A-Za-z0-9].*");
         Matcher matcher = pattern.matcher(javadoc);
 
         while (matcher.find()) {
-            javadocThrows.add(matcher.group());
+            statementsList.add(matcher.group());
         }
 
-        return javadocThrows;
+        return statementsList;
     }
+
+    static List<String> genericsFix(String[] input) {
+        List<String> result = new ArrayList<>();
+
+        for (int i = 0; i < input.length; i++) {
+            String param = input[i].replaceAll(",", "");
+
+            while (param.contains("<") && !param.contains(">")) {
+                param += ", " + input[++i];
+            }
+
+            result.add(param);
+        }
+
+        return result;
+    }
+
 }

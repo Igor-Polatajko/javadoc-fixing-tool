@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 
@@ -354,6 +355,116 @@ public class JavadocFixingHandlerTest {
         testMethodDescription.setExceptionsThrown(Arrays.asList("Exception", "IOException"));
 
         String actualValue = javadocFixingHandler.fixThrowsStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixParamStatements_nameNotFound() {
+        String testValue = "/**\n" +
+                "     * Text\n" +
+                "     *\n" +
+                "     * @param notExistingParam\n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * Text\n" +
+                "     *\n" +
+                "     * @param map - the map (Map<String, String>)\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setParams(Collections.singletonList("Map<String, String> map"));
+
+        String actualValue = javadocFixingHandler.fixParamStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixParamStatements_noDescriptionForParam() {
+        String testValue = "/**\n" +
+                "     * Text\n" +
+                "     *\n" +
+                "     * @param map\n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * Text\n" +
+                "     *\n" +
+                "     * @param map - the map (Map<String, String>)\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setParams(Collections.singletonList("Map<String, String> map"));
+
+        String actualValue = javadocFixingHandler.fixParamStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixParamStatements_noParamFor() {
+        String testValue = "/**\n" +
+                "     * Text\n" +
+                "     *\n" +
+                "     * @param map - description \n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * Text\n" +
+                "     *\n" +
+                "     * @param o - the o (Object)\n" +
+                "     * @param map - description \n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setParams(Arrays.asList("Object o", "Map<String, String> map"));
+
+        String actualValue = javadocFixingHandler.fixParamStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixParamStatements_emptyParams() {
+        String testValue = "/**\n" +
+                "     * Text\n" +
+                "     *\n" +
+                "     * @param map - description \n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * Text\n" +
+                "     *\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setParams(Collections.emptyList());
+
+        String actualValue = javadocFixingHandler.fixParamStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixParamStatements_noChangesRequired() {
+        String testValue = "/**\n" +
+                "     * Text\n" +
+                "     *\n" +
+                "     * @param o - custom description of param \n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * Text\n" +
+                "     *\n" +
+                "     * @param o - custom description of param \n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setParams(Collections.singletonList("Object o"));
+
+        String actualValue = javadocFixingHandler.fixParamStatements(testValue, testMethodDescription);
 
         assertEquals(expectedValue, actualValue);
     }

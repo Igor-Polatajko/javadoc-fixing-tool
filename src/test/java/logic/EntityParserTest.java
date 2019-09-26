@@ -291,9 +291,27 @@ public class EntityParserTest {
         DescribedEntity testDescribedEntity = new DescribedEntity();
         testDescribedEntity.setType(DescribedEntity.Type.METHOD);
         testDescribedEntity.setPresent(true);
-        testDescribedEntity.setData("Map<String, String> method(Integer integer)" +
+        testDescribedEntity.setData("Map<String, String> method(Map<Integer, String> map)" +
                 " throws Exception, IOException");
-        List<String> expectedParams = Collections.singletonList("Integer integer");
+        List<String> expectedParams = Collections.singletonList("Map<Integer, String> map");
+        List<String> expectedExceptionsThrown = Arrays.asList("Exception", "IOException");
+
+        MethodDescription resultMethodDescription = EntityParser.getMethodDescription(testDescribedEntity);
+
+        assertTrue(resultMethodDescription.isPresent());
+        assertEquals("Map<String, String>", resultMethodDescription.getReturnType());
+        assertListEquals(expectedParams, resultMethodDescription.getParams());
+        assertListEquals(expectedExceptionsThrown, resultMethodDescription.getExceptionsThrown());
+    }
+
+    @Test
+    public void getMethodDescription_successFlow_noParams() {
+        DescribedEntity testDescribedEntity = new DescribedEntity();
+        testDescribedEntity.setType(DescribedEntity.Type.METHOD);
+        testDescribedEntity.setPresent(true);
+        testDescribedEntity.setData("Map<String, String> method()" +
+                " throws Exception, IOException");
+        List<String> expectedParams = Collections.emptyList();
         List<String> expectedExceptionsThrown = Arrays.asList("Exception", "IOException");
 
         MethodDescription resultMethodDescription = EntityParser.getMethodDescription(testDescribedEntity);
@@ -328,7 +346,7 @@ public class EntityParserTest {
         }
 
         if (expected == null || actual == null || expected.size() != actual.size()) {
-            fail("List are not equal");
+            fail("List are not equal: \nExpected: " + expected + "\nActual: " + actual);
         }
 
         for (int i = 0; i < expected.size(); i++) {

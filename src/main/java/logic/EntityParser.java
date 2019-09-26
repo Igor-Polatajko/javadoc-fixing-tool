@@ -10,6 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static logic.ParserUtils.genericsFix;
 import static logic.ParserUtils.skipJavaAnnotations;
 import static logic.ParserUtils.skipNewLines;
 
@@ -34,8 +35,8 @@ public class EntityParser {
 
         methodDescription.setPresent(true);
 
-        String[] beforeParams = beforeParamsMatcher.group().trim().split(" ");
-        String[] params = paramsMatcher.group().trim().split(", ");
+        List<String> beforeParams = genericsFix(beforeParamsMatcher.group().trim().split(" "));
+        List<String> params = genericsFix(paramsMatcher.group().trim().split(", "));
 
         if (afterParamsMatcher.find()) {
             String[] afterParams = afterParamsMatcher.group().replaceAll("\\)|[,]", " ").trim().split("\\s");
@@ -50,19 +51,17 @@ public class EntityParser {
             }
         }
 
-        int offset = 2;
-        String returnType = beforeParams[beforeParams.length - offset];
-        while (returnType.contains(">") && !returnType.contains("<")) {
-            returnType = beforeParams[beforeParams.length - ++offset] + " " + returnType;
-        }
-        methodDescription.setReturnType(returnType);
+        methodDescription.setReturnType(beforeParams.get(beforeParams.size() - 2));
 
-        if (params.length > 0) {
-            params[0] = params[0].replaceAll("\\(", "");
-            params[params.length - 1] = params[params.length - 1].replaceAll("\\)", "");
+        if (params.size() > 0) {
+            params.set(0, params.get(0).replaceAll("\\(", ""));
+            params.set(params.size() - 1, params.get(params.size() - 1).replaceAll("\\)", ""));
         }
 
-        methodDescription.setParams(Arrays.asList(params));
+        params = params.stream().map(ParserUtils::skipJavaAnnotations)
+                .filter(p -> !p.equals("")).collect(Collectors.toList());
+
+        methodDescription.setParams(params);
 
         return methodDescription;
     }
