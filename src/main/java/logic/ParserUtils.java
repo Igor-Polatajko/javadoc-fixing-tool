@@ -76,7 +76,9 @@ public class ParserUtils {
     }
 
     static String skipJavaAnnotations(String data) {
-        return data.replaceAll("[@][A-Za-z0-9].*?[\\n]", "");
+        data = data.replaceAll("[@][A-Za-z0-9].*?[(].*?[)]\\s", "");
+        data = data.replaceAll("[@][A-Za-z0-9].*?\\s", "");
+        return data;
     }
 
     static String skipNewLines(String data) {
@@ -95,17 +97,27 @@ public class ParserUtils {
         return statementsList;
     }
 
-    static List<String> genericsFix(String[] input) {
+    static List<String> completeGenerics(String[] input) {
         List<String> result = new ArrayList<>();
 
         for (int i = 0; i < input.length; i++) {
-            String param = input[i].replaceAll(",", "");
-
-            while (param.contains("<") && !param.contains(">")) {
-                param += ", " + input[++i];
+            int wordBracketsBalance = 0;
+            for (int j = 0; j < input[i].length(); j++) {
+                if (input[i].charAt(j) == '<') {
+                    wordBracketsBalance++;
+                }
+                if (input[i].charAt(j) == '>') {
+                    wordBracketsBalance--;
+                }
             }
 
-            result.add(param);
+            if (wordBracketsBalance > 0 && i < input.length - 1) {
+                input[i + 1] = input[i] +
+                        (input[i].charAt(input[i].length() - 1) == ',' ? " " : ", ") + input[i + 1];
+                continue;
+            }
+
+            result.add(input[i]);
         }
 
         return result;

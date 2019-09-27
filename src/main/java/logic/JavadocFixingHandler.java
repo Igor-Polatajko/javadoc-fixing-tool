@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static logic.ParserUtils.eliminateSpecialChars;
-import static logic.ParserUtils.genericsFix;
+import static logic.ParserUtils.completeGenerics;
 import static logic.ParserUtils.getStatements;
 
 public class JavadocFixingHandler {
@@ -98,7 +98,7 @@ public class JavadocFixingHandler {
         List<List<String>> methodParams = new ArrayList<>();
 
         for (String param : methodDescription.getParams()) {
-            methodParams.add(new ArrayList<>(genericsFix(param.split(" "))));
+            methodParams.add(new ArrayList<>(completeGenerics(param.split(" "))));
         }
 
         for (String javadocParam : javadocParams) {
@@ -129,7 +129,6 @@ public class JavadocFixingHandler {
                     .anyMatch(p -> p.matches("[^<]*\\b" + param.get(1) + "\\b[^<]*"));
 
             if (!paramPresentedInJavadoc) {
-                // ToDo fix bug with incorrect param here
                 String parameterStatement = "@param " + param.get(1) + " - the " + param.get(1) + " (" + param.get(0) + ")\n";
 
                 if (indexOfFirstStatementMark > 0) {

@@ -10,7 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static logic.ParserUtils.genericsFix;
+import static logic.ParserUtils.completeGenerics;
 import static logic.ParserUtils.skipJavaAnnotations;
 import static logic.ParserUtils.skipNewLines;
 
@@ -35,8 +35,8 @@ public class EntityParser {
 
         methodDescription.setPresent(true);
 
-        List<String> beforeParams = genericsFix(beforeParamsMatcher.group().trim().split(" "));
-        List<String> params = genericsFix(paramsMatcher.group().trim().split(", "));
+        List<String> beforeParams = completeGenerics(beforeParamsMatcher.group().trim().split(" "));
+        List<String> params = completeGenerics(paramsMatcher.group().trim().split(", "));
 
         if (afterParamsMatcher.find()) {
             String[] afterParams = afterParamsMatcher.group().replaceAll("\\)|[,]", " ").trim().split("\\s");

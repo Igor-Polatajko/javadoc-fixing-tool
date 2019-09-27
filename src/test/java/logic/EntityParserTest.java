@@ -8,9 +8,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static logic.TestUtils.assertListEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class EntityParserTest {
     @Test
@@ -25,7 +25,7 @@ public class EntityParserTest {
                 "     *         Collection of generics type String\n" +
                 "     */\n" +
                 "    @Annotation\n" +
-                "    void m() throws Exception {\n" +
+                "    void m(@AnotherAnnotation(\"a\") Param param, @AndAnotherOne Object o) throws Exception {\n" +
                 "\n" +
                 "\n" +
                 "    }\n" +
@@ -33,7 +33,7 @@ public class EntityParserTest {
                 "}\n" +
                 "\n";
 
-        String expectedData = "*/        void m() throws Exception ";
+        String expectedData = "*/        void m(Param param, Object o) throws Exception ";
 
         DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(167, testValue);
 
@@ -340,17 +340,42 @@ public class EntityParserTest {
         assertListEquals(expectedExceptionsThrown, resultMethodDescription.getExceptionsThrown());
     }
 
-    private <T> void assertListEquals(List<T> expected, List<T> actual) {
-        if (expected == null && actual == null) {
-            return;
-        }
+    @Test
+    public void getMethodDescription_successFlow_complexGenerics_case1() {
+        DescribedEntity testDescribedEntity = new DescribedEntity();
+        testDescribedEntity.setType(DescribedEntity.Type.METHOD);
+        testDescribedEntity.setPresent(true);
+        testDescribedEntity.setData("void method(Map<Class<?>, SomeClass> par)" +
+                " throws Exception");
+        List<String> expectedParams = Collections.singletonList("Map<Class<?>, SomeClass> par");
+        List<String> expectedExceptionsThrown = Collections.singletonList("Exception");
 
-        if (expected == null || actual == null || expected.size() != actual.size()) {
-            fail("List are not equal: \nExpected: " + expected + "\nActual: " + actual);
-        }
+        MethodDescription resultMethodDescription = EntityParser.getMethodDescription(testDescribedEntity);
 
-        for (int i = 0; i < expected.size(); i++) {
-            assertEquals(expected.get(i), actual.get(i));
-        }
+        assertTrue(resultMethodDescription.isPresent());
+        assertEquals("void", resultMethodDescription.getReturnType());
+        assertListEquals(expectedParams, resultMethodDescription.getParams());
+        assertListEquals(expectedExceptionsThrown, resultMethodDescription.getExceptionsThrown());
     }
+
+
+    @Test
+    public void getMethodDescription_successFlow_complexGenerics_case2() {
+        DescribedEntity testDescribedEntity = new DescribedEntity();
+        testDescribedEntity.setType(DescribedEntity.Type.METHOD);
+        testDescribedEntity.setPresent(true);
+        testDescribedEntity.setData("void method(Map<Class<?>, SomeClass<List<String>," +
+                        " Map<Integer, String>>> par) throws Exception");
+        List<String> expectedParams = Collections.singletonList("Map<Class<?>, SomeClass<List<String>," +
+                " Map<Integer, String>>> par");
+        List<String> expectedExceptionsThrown = Collections.singletonList("Exception");
+
+        MethodDescription resultMethodDescription = EntityParser.getMethodDescription(testDescribedEntity);
+
+        assertTrue(resultMethodDescription.isPresent());
+        assertEquals("void", resultMethodDescription.getReturnType());
+        assertListEquals(expectedParams, resultMethodDescription.getParams());
+        assertListEquals(expectedExceptionsThrown, resultMethodDescription.getExceptionsThrown());
+    }
+
 }
