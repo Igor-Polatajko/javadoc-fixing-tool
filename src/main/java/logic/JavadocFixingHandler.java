@@ -98,7 +98,12 @@ public class JavadocFixingHandler {
         List<List<String>> methodParams = new ArrayList<>();
 
         for (String param : methodDescription.getParams()) {
-            methodParams.add(new ArrayList<>(completeGenerics(param.split(" "))));
+            List<String> params = (new ArrayList<>(completeGenerics(param.split(" "))));
+            if (params.size() == 3 && params.get(0).equals("final")) {
+                methodParams.add(params.subList(1,3));
+            } else {
+                methodParams.add(params.subList(0,2));
+            }
         }
 
         for (String javadocParam : javadocParams) {
