@@ -7,15 +7,17 @@ import fileHandler.FileContentHandler;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static logic.ParserUtils.eliminateSpecialChars;
 import static logic.ParserUtils.completeGenerics;
+import static logic.ParserUtils.eliminateSpecialChars;
 import static logic.ParserUtils.getStatements;
+import static logic.ParserUtils.skipEmptyLines;
 
 public class JavadocFixingHandler {
 
@@ -100,9 +102,9 @@ public class JavadocFixingHandler {
         for (String param : methodDescription.getParams()) {
             List<String> params = (new ArrayList<>(completeGenerics(param.split(" "))));
             if (params.size() == 3 && params.get(0).equals("final")) {
-                methodParams.add(params.subList(1,3));
+                methodParams.add(params.subList(1, 3));
             } else {
-                methodParams.add(params.subList(0,2));
+                methodParams.add(params.subList(0, 2));
             }
         }
 
@@ -127,18 +129,25 @@ public class JavadocFixingHandler {
             return javadoc;
         }
 
-        int indexOfFirstStatementMark = javadoc.indexOf("@");
-
+        Collections.reverse(methodParams);
         for (List<String> param : methodParams) {
+            int indexOfFirstStatementMark = javadoc.indexOf("@");
+            int indexOfFirstInlineBlockStartMark = javadoc.indexOf("{");
+
             boolean paramPresentedInJavadoc = javadocParams.stream()
                     .anyMatch(p -> p.matches("[^<]*\\b" + param.get(1) + "\\b[^<]*"));
 
             if (!paramPresentedInJavadoc) {
                 String parameterStatement = "@param " + param.get(1) + " - the " + param.get(1) + " (" + param.get(0) + ")\n";
 
-                if (indexOfFirstStatementMark > 0) {
+                if (indexOfFirstStatementMark > 0 && (indexOfFirstInlineBlockStartMark < 0
+                        || indexOfFirstStatementMark < indexOfFirstInlineBlockStartMark)) {
                     javadoc = javadoc.substring(0, indexOfFirstStatementMark) + parameterStatement + "     * "
                             + javadoc.substring(indexOfFirstStatementMark);
+                } else if (indexOfFirstInlineBlockStartMark > 0) {
+                    javadoc = javadoc.replaceFirst("[/][*][*]",
+                            "/**\n     * " + parameterStatement);
+                    javadoc = skipEmptyLines(javadoc);
                 } else {
                     javadoc = javadoc.replaceFirst("[*][/]",
                             "* " + parameterStatement + "     */");

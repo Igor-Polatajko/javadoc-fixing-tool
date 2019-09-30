@@ -403,6 +403,28 @@ public class JavadocFixingHandlerTest {
     }
 
     @Test
+    public void fixParamStatements_someInlineDocumentationPresented() {
+        String testValue = "/**\n" +
+                "     * Text\n" +
+                "     * {@link com.package.Class}\n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * @param integer - the integer (Integer)\n" +
+                "     * @param string - the string (String)\n" +
+                "     * Text\n" +
+                "     * {@link com.package.Class}\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setParams(Arrays.asList("Integer integer", "String string"));
+
+        String actualValue = javadocFixingHandler.fixParamStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
     public void fixParamStatements_noDescriptionForParam() {
         String testValue = "/**\n" +
                 "     * Text\n" +

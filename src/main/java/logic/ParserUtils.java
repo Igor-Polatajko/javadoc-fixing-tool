@@ -85,6 +85,10 @@ public class ParserUtils {
         return data.replaceAll("[\\n]", "");
     }
 
+    static String skipEmptyLines(String data) {
+        return data.replaceAll("[\\n][\\s]*?[\\n]", "\n");
+    }
+
     static List<String> getStatements(String javadoc, String statement) {
         List<String> statementsList = new ArrayList<>();
         Pattern pattern = Pattern.compile("[@]" + statement + "\\s[A-Za-z0-9].*");
