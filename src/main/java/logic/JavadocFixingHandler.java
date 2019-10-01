@@ -117,11 +117,18 @@ public class JavadocFixingHandler {
                 continue;
             }
 
-            if (javadocParam.split(" ").length < 3) {
+            String[] javadocParamParts = javadocParam.split(" ");
+
+            if (javadocParamParts.length < 3) {
                 String replacement = "@param " + validJavadocParameterName.get(1) + " - the " +
                         validJavadocParameterName.get(1) + " (" + validJavadocParameterName.get(0) + ")";
 
                 javadoc = javadoc.replaceFirst(eliminateSpecialChars(javadocParam), replacement);
+            }
+
+            if (javadocParamParts[1].matches("[\\(]" + validJavadocParameterName.get(1) + "[\\)]")) {
+                javadoc = javadoc.replaceFirst(eliminateSpecialChars(
+                        javadocParamParts[1]), validJavadocParameterName.get(1));
             }
         }
 
