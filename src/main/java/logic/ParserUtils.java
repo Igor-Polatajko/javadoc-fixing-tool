@@ -117,7 +117,7 @@ public class ParserUtils {
 
             if (wordBracketsBalance > 0 && i < input.length - 1) {
                 input[i + 1] = input[i] +
-                        (input[i].charAt(input[i].length() - 1) == ',' ? " " : ", ") + input[i + 1];
+                        (input[i].charAt(input[i].length() - 1) == ',' ? " " : ", ") + input[i + 1].trim();
                 continue;
             }
 

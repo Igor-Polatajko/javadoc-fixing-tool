@@ -273,7 +273,7 @@ public class EntityParserTest {
         DescribedEntity testDescribedEntity = new DescribedEntity();
         testDescribedEntity.setType(DescribedEntity.Type.METHOD);
         testDescribedEntity.setPresent(true);
-        testDescribedEntity.setData("public Set<String> method(List<String> strings, Integer integer)" +
+        testDescribedEntity.setData("public Set<String> method(List<String> strings,\n    Integer integer)" +
                 " throws Exception, IOException,SQLException,     FileNotFoundException");
         List<String> expectedParams = Arrays.asList("List<String> strings", "Integer integer");
         List<String> expectedExceptionsThrown = Arrays.asList("Exception", "IOException", "SQLException", "FileNotFoundException");

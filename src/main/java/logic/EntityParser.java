@@ -25,9 +25,9 @@ public class EntityParser {
 
         String methodSignature = describedEntity.getData();
 
-        Matcher beforeParamsMatcher = Pattern.compile(".*?[(]").matcher(methodSignature);
-        Matcher paramsMatcher = Pattern.compile("[(].*?[)]").matcher(methodSignature);
-        Matcher afterParamsMatcher = Pattern.compile("[)].*").matcher(methodSignature);
+        Matcher beforeParamsMatcher = Pattern.compile("[^\\^]*?[(]").matcher(methodSignature);
+        Matcher paramsMatcher = Pattern.compile("[(][^\\^]*?[)]").matcher(methodSignature);
+        Matcher afterParamsMatcher = Pattern.compile("[)][^\\^]*").matcher(methodSignature);
 
         if (!beforeParamsMatcher.find() || !paramsMatcher.find()) {
             return methodDescription;
@@ -36,7 +36,7 @@ public class EntityParser {
         methodDescription.setPresent(true);
 
         List<String> beforeParams = completeGenerics(beforeParamsMatcher.group().trim().split(" "));
-        List<String> params = completeGenerics(paramsMatcher.group().trim().split(", "));
+        List<String> params = completeGenerics(paramsMatcher.group().trim().split(","));
 
         if (afterParamsMatcher.find()) {
             String[] afterParams = afterParamsMatcher.group().replaceAll("\\)|[,]", " ").trim().split("\\s");
@@ -58,7 +58,8 @@ public class EntityParser {
             params.set(params.size() - 1, params.get(params.size() - 1).replaceAll("\\)", ""));
         }
 
-        params = params.stream().map(ParserUtils::skipJavaAnnotations)
+        params = params.stream()
+                .map(ParserUtils::skipJavaAnnotations).map(ParserUtils::skipNewLines).map(String::trim)
                 .filter(p -> !p.equals("")).collect(Collectors.toList());
 
         methodDescription.setParams(params);
