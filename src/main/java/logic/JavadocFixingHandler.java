@@ -1,5 +1,6 @@
 package logic;
 
+import custom.VisibleForTesting;
 import entity.DescribedEntity;
 import entity.MethodDescription;
 import fileHandler.FileContentHandler;
@@ -94,7 +95,7 @@ public class JavadocFixingHandler {
         return fixedJavadoc;
     }
 
-    // Visible for testing
+    @VisibleForTesting
     String fixParamStatements(String javadoc, MethodDescription methodDescription) {
         List<String> javadocParams = getStatements(javadoc, "param");
         List<List<String>> methodParams = new ArrayList<>();
@@ -165,7 +166,7 @@ public class JavadocFixingHandler {
         return javadoc;
     }
 
-    // Visible for testing
+    @VisibleForTesting
     String fixThrowsStatements(String javadoc, MethodDescription methodDescription) {
         List<String> javadocThrows = getStatements(javadoc, "throws");
 
@@ -247,7 +248,7 @@ public class JavadocFixingHandler {
         return javadoc;
     }
 
-    // Visible for testing
+    @VisibleForTesting
     String fixSelfEnclosingAndEmptyTags(String javadoc) {
         javadoc = javadoc.replaceAll("<[^\\/>][^>]*><\\/[^>]+>", ""); // <tag></tag> -> ""
 
@@ -267,7 +268,7 @@ public class JavadocFixingHandler {
         return javadoc;
     }
 
-    // Visible for testing
+    @VisibleForTesting
     String fixSelfInventedAnnotations(String javadoc) {
         Set<String> allowedAnnotations = new HashSet<>(Arrays.asList(
                 "@author", "@version", "@param",
@@ -294,12 +295,12 @@ public class JavadocFixingHandler {
         return javadoc;
     }
 
-    // Visible for testing
+    @VisibleForTesting
     String fixAmpersands(String javadoc) {
         return javadoc.replaceAll("(&+|[ ]+&+[ ]+)(?!(?:apos|quot|[gl]t|amp);|#)", " and "); // "&" -> "and"
     }
 
-    // Visible for testing
+    @VisibleForTesting
     String fixBadUseOfAngleBrackets(String javadoc) {
         javadoc = javadoc.replaceAll("[ ]+>[ ]+", " greater than ") // ">" -> "greater than"
                 .replaceAll("[ ]+<[ ]+", " less than ") // "<" -> "less than"
@@ -310,7 +311,7 @@ public class JavadocFixingHandler {
         return javadoc;
     }
 
-    // Visible for testing
+    @VisibleForTesting
     String fixIncompleteTags(String javadoc) {
         Pattern pattern = Pattern.compile("&lt;[^<]*?>");
         Matcher matcher = pattern.matcher(javadoc);
@@ -324,7 +325,7 @@ public class JavadocFixingHandler {
         return javadoc;
     }
 
-    // Visible for testing
+    @VisibleForTesting
     String fixGenerics(String javadoc) {
         Pattern pattern = Pattern.compile("[A-Z]+[A-Za-z0-9]*[ ]?[<].*?[>]");
         Matcher matcher = pattern.matcher(javadoc);

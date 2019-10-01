@@ -10,6 +10,7 @@ import java.util.List;
 
 import static logic.TestUtils.assertListEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class EntityParserTest {
@@ -365,7 +366,7 @@ public class EntityParserTest {
         testDescribedEntity.setType(DescribedEntity.Type.METHOD);
         testDescribedEntity.setPresent(true);
         testDescribedEntity.setData("void method(Map<Class<?>, SomeClass<List<String>," +
-                        " Map<Integer, String>>> par) throws Exception");
+                " Map<Integer, String>>> par) throws Exception");
         List<String> expectedParams = Collections.singletonList("Map<Class<?>, SomeClass<List<String>," +
                 " Map<Integer, String>>> par");
         List<String> expectedExceptionsThrown = Collections.singletonList("Exception");
@@ -376,6 +377,65 @@ public class EntityParserTest {
         assertEquals("void", resultMethodDescription.getReturnType());
         assertListEquals(expectedParams, resultMethodDescription.getParams());
         assertListEquals(expectedExceptionsThrown, resultMethodDescription.getExceptionsThrown());
+    }
+
+    @Test
+    public void parseReturnType() {
+        String testSignature = "Map<String, String> method(Map<Class<?>, SomeClass<List<String>,\n" +
+                " Map<Integer, String>>> par) throws Exception";
+        String expected = "Map<String, String>";
+
+        String actual = EntityParser.parseReturnType(testSignature);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void parseReturnType_accessModifier() {
+        String testSignature = "public void method(Map<Class<?>, SomeClass<List<String>,\n" +
+                " Map<Integer, String>>> par) throws Exception";
+        String expected = "void";
+
+        String actual = EntityParser.parseReturnType(testSignature);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void parseReturnType_constructor() {
+        String testSignature = "Method(Map<Class<?>, SomeClass<List<String>,\n" +
+                " Map<Integer, String>>> par) throws Exception";
+
+        String actual = EntityParser.parseReturnType(testSignature);
+        assertNull(actual);
+    }
+
+    @Test
+    public void parseParams() {
+        String testSignature = "void m(Map<Class<?>, SomeClass<List<String>,\n" +
+                " Map<Integer, String>>> par,  List<String> strings, Map<Integer, List<String>>) throws Exception";
+        List<String> expected = Arrays.asList("Map<Class<?>, SomeClass<List<String>," +
+                " Map<Integer, String>>> par", "List<String> strings", "Map<Integer, List<String>>");
+
+        List<String> actual = EntityParser.parseParams(testSignature);
+
+        assertListEquals(expected, actual);
+    }
+
+    @Test
+    public void parseParams_noParams() {
+        String testSignature = "void m( ) throws Exception";
+        List<String> expected = Collections.emptyList();
+        List<String> actual = EntityParser.parseParams(testSignature);
+
+        assertListEquals(expected, actual);
+    }
+
+    @Test
+    public void parseExceptionsThrown() {
+        String testSignature = "void m() throws Exception, IOException, FileNotFoundException";
+        List<String> expected = Arrays.asList("Exception", "IOException", "FileNotFoundException");
+        List<String> actual = EntityParser.parseExceptionsThrown(testSignature);
+
+        assertListEquals(expected, actual);
     }
 
 }

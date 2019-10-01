@@ -1,5 +1,6 @@
 package logic;
 
+import custom.VisibleForTesting;
 import entity.DescribedEntity;
 import entity.MethodDescription;
 
@@ -25,47 +26,68 @@ public class EntityParser {
 
         String methodSignature = describedEntity.getData();
 
-        Matcher beforeParamsMatcher = Pattern.compile("[^\\^]*?[(]").matcher(methodSignature);
-        Matcher paramsMatcher = Pattern.compile("[(][^\\^]*?[)]").matcher(methodSignature);
-        Matcher afterParamsMatcher = Pattern.compile("[)][^\\^]*").matcher(methodSignature);
+        String returnType = parseReturnType(methodSignature);
+        List<String> params = parseParams(methodSignature);
+        List<String> exceptionsThrown = parseExceptionsThrown(methodSignature);
 
-        if (!beforeParamsMatcher.find() || !paramsMatcher.find()) {
+        if (returnType == null || params == null) {
             return methodDescription;
         }
 
         methodDescription.setPresent(true);
+        methodDescription.setReturnType(returnType);
+        methodDescription.setParams(params);
+        methodDescription.setExceptionsThrown(exceptionsThrown);
 
-        List<String> beforeParams = completeGenerics(beforeParamsMatcher.group().trim().split(" "));
-        List<String> params = completeGenerics(paramsMatcher.group().trim().split(","));
+        return methodDescription;
+    }
 
-        if (afterParamsMatcher.find()) {
-            String[] afterParams = afterParamsMatcher.group().replaceAll("\\)|[,]", " ").trim().split("\\s");
+    @VisibleForTesting
+    static String parseReturnType(String signature) {
+        Matcher beforeParamsMatcher = Pattern.compile("[^\\^]*?[(]").matcher(signature);
 
-            List<String> afterParamsFiltered = Arrays.stream(afterParams).map(String::trim).filter(s -> !s.equals(""))
-                    .collect(Collectors.toList());
-
-            if (!afterParamsFiltered.isEmpty() && afterParamsFiltered.get(0).contains("throws")) {
-                methodDescription.setExceptionsThrown(afterParamsFiltered.subList(1, afterParamsFiltered.size()));
-            } else {
-                methodDescription.setExceptionsThrown(Collections.emptyList());
-            }
+        if (!beforeParamsMatcher.find()) {
+            return null;
         }
 
-        methodDescription.setReturnType(beforeParams.get(beforeParams.size() - 2));
+        List<String> beforeParams = completeGenerics(beforeParamsMatcher.group().trim().split(" "));
+        return beforeParams.size() >= 2 ? beforeParams.get(beforeParams.size() - 2) : null;
+    }
 
+    @VisibleForTesting
+    static List<String> parseParams(String signature) {
+        Matcher paramsMatcher = Pattern.compile("[(][^\\^]*?[)]").matcher(signature);
+
+        if (!paramsMatcher.find()) {
+            return null;
+        }
+
+        List<String> params = completeGenerics(paramsMatcher.group().trim().split(","));
         if (params.size() > 0) {
             params.set(0, params.get(0).replaceAll("\\(", ""));
             params.set(params.size() - 1, params.get(params.size() - 1).replaceAll("\\)", ""));
         }
-
-        params = params.stream()
+        return params.stream()
                 .map(ParserUtils::skipJavaAnnotations).map(ParserUtils::skipNewLines).map(String::trim)
                 .filter(p -> !p.equals("")).collect(Collectors.toList());
-
-        methodDescription.setParams(params);
-
-        return methodDescription;
     }
+
+    @VisibleForTesting
+    static List<String> parseExceptionsThrown(String signature) {
+        Matcher afterParamsMatcher = Pattern.compile("[)][^\\^]*").matcher(signature);
+
+        if (afterParamsMatcher.find()) {
+            String[] afterParams = afterParamsMatcher.group().replaceAll("\\)|[,]", " ").trim().split("\\s");
+            List<String> afterParamsFiltered = Arrays.stream(afterParams).map(String::trim).filter(s -> !s.equals(""))
+                    .collect(Collectors.toList());
+
+            if (!afterParamsFiltered.isEmpty() && afterParamsFiltered.get(0).contains("throws")) {
+                return afterParamsFiltered.subList(1, afterParamsFiltered.size());
+            }
+        }
+        return Collections.emptyList();
+    }
+
 
     static DescribedEntity getDescribedEntity(int javadocEndIndex, String fileContent) {
         DescribedEntity describedEntity = new DescribedEntity();
