@@ -127,4 +127,17 @@ public class ParserUtils {
         return result;
     }
 
+    static List<List<String>> convertParams(List<String> params) {
+        List<List<String>> methodParams = new ArrayList<>();
+        for (String param : params) {
+            List<String> paramList = (new ArrayList<>(completeGenerics(param.split(" "))));
+            if (paramList.size() == 3 && paramList.get(0).equals("final")) {
+                methodParams.add(paramList.subList(1, 3));
+            } else {
+                methodParams.add(paramList.subList(0, 2));
+            }
+        }
+        return methodParams;
+    }
+
 }

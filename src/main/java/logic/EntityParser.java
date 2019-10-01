@@ -88,11 +88,8 @@ public class EntityParser {
         return Collections.emptyList();
     }
 
-
     static DescribedEntity getDescribedEntity(int javadocEndIndex, String fileContent) {
         DescribedEntity describedEntity = new DescribedEntity();
-        String methodRegex = "[^.]*?[A-Za-z0-9_<>\\[\\]]+?\\s+?[a-z][A-Za-z0-9_<>]*?[(][^.]*?[)][^.]*";
-        String fieldRegex = "[^.]*?[A-Za-z0-9_<>]+?\\s+?\\w+?";
 
         int indexOfNextCurlyBracket = fileContent.indexOf("{", javadocEndIndex + 1);
         int indexOfNextSemicolon = fileContent.indexOf(";", javadocEndIndex + 1);
@@ -103,28 +100,37 @@ public class EntityParser {
         }
 
         describedEntity.setPresent(true);
-
         String data =
                 (indexOfNextCurlyBracket > indexOfNextSemicolon || indexOfNextCurlyBracket < 0) && indexOfNextSemicolon > 0
                         ? fileContent.substring(javadocEndIndex, indexOfNextSemicolon)
                         : fileContent.substring(javadocEndIndex, indexOfNextCurlyBracket);
 
         describedEntity.setData(skipNewLines(skipJavaAnnotations(data)));
-
-        if (describedEntity.getData().matches(methodRegex)) {
-            describedEntity.setType(DescribedEntity.Type.METHOD);
-        } else if (describedEntity.getData().matches("(?i)" + methodRegex)) {
-            describedEntity.setType(DescribedEntity.Type.CONSTRUCTOR);
-        } else if (describedEntity.getData().matches(fieldRegex)) {
-            describedEntity.setType(DescribedEntity.Type.FIELD);
-        } else if (describedEntity.getData().contains(" class ")) {
-            describedEntity.setType(DescribedEntity.Type.CLASS);
-        } else if (describedEntity.getData().contains(" interface ")) {
-            describedEntity.setType(DescribedEntity.Type.INTERFACE);
-        } else {
-            describedEntity.setType(DescribedEntity.Type.ANOTHER);
-        }
+        describedEntity.setType(resolveEntityType(describedEntity.getData()));
 
         return describedEntity;
+    }
+
+    private static DescribedEntity.Type resolveEntityType(String data) {
+        String methodRegex = "[^.]*?[A-Za-z0-9_<>\\[\\]]+?\\s+?[a-z][A-Za-z0-9_<>]*?[(][^.]*?[)][^.]*";
+        String fieldRegex = "[^.]*?[A-Za-z0-9_<>]+?\\s+?\\w+?";
+
+        if (data.matches(methodRegex)) {
+            return DescribedEntity.Type.METHOD;
+        }
+        if (data.matches("(?i)" + methodRegex)) {
+            return DescribedEntity.Type.CONSTRUCTOR;
+        }
+        if (data.matches(fieldRegex)) {
+            return DescribedEntity.Type.FIELD;
+        }
+        if (data.contains(" class ")) {
+            return DescribedEntity.Type.CLASS;
+        }
+        if (data.contains(" interface ")) {
+            return DescribedEntity.Type.INTERFACE;
+        }
+
+        return DescribedEntity.Type.ANOTHER;
     }
 }

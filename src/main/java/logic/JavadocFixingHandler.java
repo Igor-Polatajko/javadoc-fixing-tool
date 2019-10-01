@@ -2,11 +2,11 @@ package logic;
 
 import custom.VisibleForTesting;
 import entity.DescribedEntity;
+import entity.EntityDetailDescription;
 import entity.MethodDescription;
 import fileHandler.FileContentHandler;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static logic.ParserUtils.completeGenerics;
+import static logic.ParserUtils.convertParams;
 import static logic.ParserUtils.eliminateSpecialChars;
 import static logic.ParserUtils.getStatements;
 import static logic.ParserUtils.skipEmptyLines;
@@ -96,21 +96,12 @@ public class JavadocFixingHandler {
     }
 
     @VisibleForTesting
-    String fixParamStatements(String javadoc, MethodDescription methodDescription) {
+    String fixParamStatements(String javadoc, EntityDetailDescription entityDetailDescription) {
         List<String> javadocParams = getStatements(javadoc, "param");
-        List<List<String>> methodParams = new ArrayList<>();
-
-        for (String param : methodDescription.getParams()) {
-            List<String> params = (new ArrayList<>(completeGenerics(param.split(" "))));
-            if (params.size() == 3 && params.get(0).equals("final")) {
-                methodParams.add(params.subList(1, 3));
-            } else {
-                methodParams.add(params.subList(0, 2));
-            }
-        }
+        List<List<String>> params = convertParams(entityDetailDescription.getParams());
 
         for (String javadocParam : javadocParams) {
-            List<String> validJavadocParameterName = methodParams.stream()
+            List<String> validJavadocParameterName = params.stream()
                     .filter(p -> javadocParam.matches("[^<]*\\b" + p.get(1) + "\\b[^<]*")).findAny().orElse(null);
 
             if (validJavadocParameterName == null) {
@@ -133,12 +124,12 @@ public class JavadocFixingHandler {
             }
         }
 
-        if (methodParams.isEmpty()) {
+        if (params.isEmpty()) {
             return javadoc;
         }
 
-        Collections.reverse(methodParams);
-        for (List<String> param : methodParams) {
+        Collections.reverse(params);
+        for (List<String> param : params) {
             int indexOfFirstStatementMark = javadoc.indexOf("@");
             int indexOfFirstInlineBlockStartMark = javadoc.indexOf("{");
 
