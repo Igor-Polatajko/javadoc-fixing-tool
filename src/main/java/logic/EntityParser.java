@@ -1,7 +1,9 @@
 package logic;
 
 import custom.VisibleForTesting;
+import entity.ConstructorDescription;
 import entity.DescribedEntity;
+import entity.EntityDetailDescription;
 import entity.MethodDescription;
 
 import java.util.Arrays;
@@ -16,30 +18,47 @@ import static logic.ParserUtils.skipJavaAnnotations;
 import static logic.ParserUtils.skipNewLines;
 
 public class EntityParser {
-    static MethodDescription getMethodDescription(DescribedEntity describedEntity) {
-        MethodDescription methodDescription = new MethodDescription();
-        methodDescription.setPresent(false);
+    static EntityDetailDescription getEntityDetailDescription(DescribedEntity describedEntity) {
+        EntityDetailDescription entityDescription = getAppropriateEntityDetailDescription(describedEntity);
+        entityDescription.setPresent(false);
 
-        if (!describedEntity.isPresent() || describedEntity.getType() != DescribedEntity.Type.METHOD) {
-            return methodDescription;
+        if (!(entityDescription instanceof MethodDescription || entityDescription instanceof ConstructorDescription)) {
+            return entityDescription;
         }
 
-        String methodSignature = describedEntity.getData();
+        String signature = describedEntity.getData();
 
-        String returnType = parseReturnType(methodSignature);
-        List<String> params = parseParams(methodSignature);
-        List<String> exceptionsThrown = parseExceptionsThrown(methodSignature);
-
-        if (returnType == null || params == null) {
-            return methodDescription;
+        if (entityDescription instanceof MethodDescription) {
+            String returnType = parseReturnType(signature);
+            if (returnType == null) {
+                return entityDescription;
+            }
+            ((MethodDescription) entityDescription).setReturnType(returnType);
         }
 
-        methodDescription.setPresent(true);
-        methodDescription.setReturnType(returnType);
-        methodDescription.setParams(params);
-        methodDescription.setExceptionsThrown(exceptionsThrown);
+        List<String> params = parseParams(signature);
+        List<String> exceptionsThrown = parseExceptionsThrown(signature);
 
-        return methodDescription;
+        if (params == null) {
+            return entityDescription;
+        }
+        entityDescription.setPresent(true);
+        entityDescription.setParams(params);
+        entityDescription.setExceptionsThrown(exceptionsThrown);
+
+        return entityDescription;
+    }
+
+    private static EntityDetailDescription getAppropriateEntityDetailDescription(DescribedEntity describedEntity) {
+        if (describedEntity.isPresent()) {
+            if (describedEntity.getType() == DescribedEntity.Type.METHOD) {
+                return new MethodDescription();
+            }
+            if (describedEntity.getType() == DescribedEntity.Type.CONSTRUCTOR) {
+                return new ConstructorDescription();
+            }
+        }
+        return new EntityDetailDescription();
     }
 
     @VisibleForTesting
@@ -113,12 +132,13 @@ public class EntityParser {
 
     private static DescribedEntity.Type resolveEntityType(String data) {
         String methodRegex = "[^.]*?[A-Za-z0-9_<>\\[\\]]+?\\s+?[a-z][A-Za-z0-9_<>]*?[(][^.]*?[)][^.]*";
+        String constructorRegex = "[^=.]*?[A-Za-z0-9_<>\\[\\]]+?\\s+?[A-Z][A-Za-z0-9_<>]*?[(][^.]*?[)][^.]*";
         String fieldRegex = "[^.]*?[A-Za-z0-9_<>]+?\\s+?\\w+?";
 
         if (data.matches(methodRegex)) {
             return DescribedEntity.Type.METHOD;
         }
-        if (data.matches("(?i)" + methodRegex)) {
+        if (data.matches(constructorRegex)) {
             return DescribedEntity.Type.CONSTRUCTOR;
         }
         if (data.matches(fieldRegex)) {

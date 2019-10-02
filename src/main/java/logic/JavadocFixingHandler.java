@@ -69,19 +69,23 @@ public class JavadocFixingHandler {
     }
 
     /*package*/ String fixJavadocBasedOnDescribedEntity(String javadoc, DescribedEntity describedEntity) {
-        if (!describedEntity.isPresent() || describedEntity.getType() != DescribedEntity.Type.METHOD) {
+        if (!describedEntity.isPresent()) {
             return javadoc;
         }
-        MethodDescription methodDescription = EntityParser.getMethodDescription(describedEntity);
+        EntityDetailDescription entityDescription = EntityParser.getEntityDetailDescription(describedEntity);
 
-        if (!methodDescription.isPresent()) {
+        if (!entityDescription.isPresent()) {
             return javadoc;
         }
 
-        String fixedJavadoc = fixReturnStatements(javadoc, methodDescription);
-        fixedJavadoc = fixThrowsStatements(fixedJavadoc, methodDescription);
-        fixedJavadoc = fixParamStatements(fixedJavadoc, methodDescription);
-        return fixedJavadoc;
+        javadoc = fixParamStatements(javadoc, entityDescription);
+        javadoc = fixThrowsStatements(javadoc, entityDescription);
+
+        if (entityDescription instanceof MethodDescription) {
+            javadoc = fixReturnStatements(javadoc, (MethodDescription) entityDescription);
+        }
+
+        return javadoc;
     }
 
     /*package*/ String fixJavadocBasedOnSyntaxRequirements(String javadoc) {
@@ -96,9 +100,9 @@ public class JavadocFixingHandler {
     }
 
     @VisibleForTesting
-    String fixParamStatements(String javadoc, EntityDetailDescription entityDetailDescription) {
+    String fixParamStatements(String javadoc, EntityDetailDescription entityDescription) {
         List<String> javadocParams = getStatements(javadoc, "param");
-        List<List<String>> params = convertParams(entityDetailDescription.getParams());
+        List<List<String>> params = convertParams(entityDescription.getParams());
 
         for (String javadocParam : javadocParams) {
             List<String> validJavadocParameterName = params.stream()
@@ -158,17 +162,17 @@ public class JavadocFixingHandler {
     }
 
     @VisibleForTesting
-    String fixThrowsStatements(String javadoc, MethodDescription methodDescription) {
+    String fixThrowsStatements(String javadoc, EntityDetailDescription entityDescription) {
         List<String> javadocThrows = getStatements(javadoc, "throws");
 
         for (String javadocThrow : javadocThrows) {
             String[] javadocThrowParts = javadocThrow.trim().split("\\s");
             String exceptionName = javadocThrowParts[1];
 
-            boolean thrown = methodDescription.getExceptionsThrown().stream()
+            boolean thrown = entityDescription.getExceptionsThrown().stream()
                     .anyMatch(ex -> exceptionName.matches("[^<]*\\b" + ex + "\\b[^<]*"));
 
-            if (methodDescription.getExceptionsThrown().isEmpty() || !thrown) {
+            if (entityDescription.getExceptionsThrown().isEmpty() || !thrown) {
                 javadoc = javadoc.replaceFirst(LINE_BEGIN_PATTERN + eliminateSpecialChars(javadocThrow), "");
                 continue;
             }
@@ -178,11 +182,11 @@ public class JavadocFixingHandler {
             }
         }
 
-        if (methodDescription.getExceptionsThrown().isEmpty()) {
+        if (entityDescription.getExceptionsThrown().isEmpty()) {
             return javadoc;
         }
 
-        for (String exception : methodDescription.getExceptionsThrown()) {
+        for (String exception : entityDescription.getExceptionsThrown()) {
             boolean throwsPresentedInJavadoc = javadocThrows.stream()
                     .anyMatch(th -> th.matches("[^<]*\\b" + exception + "\\b[^<]*"));
 

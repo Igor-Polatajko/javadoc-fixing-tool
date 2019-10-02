@@ -1,5 +1,7 @@
 package logic;
 
+import entity.ConstructorDescription;
+import entity.EntityDetailDescription;
 import entity.MethodDescription;
 import org.junit.Before;
 import org.junit.Test;
@@ -530,6 +532,31 @@ public class JavadocFixingHandlerTest {
         testMethodDescription.setParams(Collections.singletonList("Object o"));
 
         String actualValue = javadocFixingHandler.fixParamStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixParamStatements_constructor() {
+        String testValue = "/**\n" +
+                "     * Text\n" +
+                "     *\n" +
+                "     * @param map - description \n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * Text\n" +
+                "     *\n" +
+                "     * @param o - the o (Object)\n" +
+                "     * @param list - the list (List<Class<?> c, String>)\n" +
+                "     * @param map - description \n" +
+                "     */";
+
+        EntityDetailDescription testConstructorDescription = new ConstructorDescription();
+        testConstructorDescription.setParams(Arrays.asList("Object o", "Map<String, String> map",
+                "List<Class<?> c, String> list"));
+
+        String actualValue = javadocFixingHandler.fixParamStatements(testValue, testConstructorDescription);
 
         assertEquals(expectedValue, actualValue);
     }

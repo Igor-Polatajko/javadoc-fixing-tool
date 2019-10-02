@@ -116,8 +116,7 @@ public class ParserUtils {
             }
 
             if (wordBracketsBalance > 0 && i < input.length - 1) {
-                input[i + 1] = input[i] +
-                        (input[i].charAt(input[i].length() - 1) == ',' ? " " : ", ") + input[i + 1].trim();
+                input[i + 1] = input[i] + resolveSeparator(input[i], input[i + 1]) + input[i + 1].trim();
                 continue;
             }
 
@@ -126,6 +125,14 @@ public class ParserUtils {
 
         return result;
     }
+
+    private static String resolveSeparator(String before, String after) {
+        return (before.charAt(before.length() - 1) == ',')
+                || (after.contains(",") && !after.contains(">"))
+                || (after.matches("[a-z_]+.*?"))
+                ? " " : ", ";
+    }
+
 
     static List<List<String>> convertParams(List<String> params) {
         List<List<String>> methodParams = new ArrayList<>();

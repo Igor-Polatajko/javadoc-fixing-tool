@@ -1,5 +1,6 @@
 package logic;
 
+import entity.ConstructorDescription;
 import entity.DescribedEntity;
 import entity.MethodDescription;
 import org.junit.Test;
@@ -222,6 +223,35 @@ public class EntityParserTest {
     }
 
     @Test
+    public void getDescribedEntity_successFlow_constructor_case2() {
+        String testValue = "public class App {\n" +
+                "\n" +
+                "\n" +
+                "    /**\n" +
+                "     * a and b\n" +
+                "     * Map  (String - key,  String - value)\n" +
+                "     *     {@code Map }\n" +
+                "     *         Collection of generics type String\n" +
+                "     */\n" +
+                "    @Annotation\n" +
+                "    public Class(String string) throws Exception {\n" +
+                "\n" +
+                "\n" +
+                "    }\n" +
+                "\n" +
+                "}\n" +
+                "\n";
+
+        String expectedData = "*/        public Class(String string) throws Exception ";
+
+        DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(167, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.CONSTRUCTOR, resultDescribedEntity.getType());
+        assertEquals(expectedData, resultDescribedEntity.getData());
+    }
+
+    @Test
     public void getDescribedEntity_successFlow_another() {
         String testValue = "/**\n" +
                 " * Javadoc\n" +
@@ -229,6 +259,22 @@ public class EntityParserTest {
                 "context.checking(new Expectations() {}";
 
         String expectedData = "*/context.checking(new Expectations() ";
+
+        DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(16, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.ANOTHER, resultDescribedEntity.getType());
+        assertEquals(expectedData, resultDescribedEntity.getData());
+    }
+
+    @Test
+    public void getDescribedEntity_successFlow_another_objectCreationNotResolvedAsConstructorDescription() {
+        String testValue = "/**\n" +
+                " * Javadoc\n" +
+                " */\n" +
+                "public static final ref = new Class(\"string\");\n";
+
+        String expectedData = "*/public static final ref = new Class(\"string\")";
 
         DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(16, testValue);
 
@@ -270,7 +316,7 @@ public class EntityParserTest {
     }
 
     @Test
-    public void getMethodDescription_successFlow() {
+    public void getEntityDetailDescription_method() {
         DescribedEntity testDescribedEntity = new DescribedEntity();
         testDescribedEntity.setType(DescribedEntity.Type.METHOD);
         testDescribedEntity.setPresent(true);
@@ -279,7 +325,7 @@ public class EntityParserTest {
         List<String> expectedParams = Arrays.asList("List<String> strings", "Integer integer");
         List<String> expectedExceptionsThrown = Arrays.asList("Exception", "IOException", "SQLException", "FileNotFoundException");
 
-        MethodDescription resultMethodDescription = EntityParser.getMethodDescription(testDescribedEntity);
+        MethodDescription resultMethodDescription = (MethodDescription) EntityParser.getEntityDetailDescription(testDescribedEntity);
 
         assertTrue(resultMethodDescription.isPresent());
         assertEquals("Set<String>", resultMethodDescription.getReturnType());
@@ -288,7 +334,7 @@ public class EntityParserTest {
     }
 
     @Test
-    public void getMethodDescription_successFlow_twoArgsGenericsReturnType() {
+    public void getEntityDetailDescription_method_twoArgsGenericsReturnType() {
         DescribedEntity testDescribedEntity = new DescribedEntity();
         testDescribedEntity.setType(DescribedEntity.Type.METHOD);
         testDescribedEntity.setPresent(true);
@@ -297,7 +343,7 @@ public class EntityParserTest {
         List<String> expectedParams = Collections.singletonList("Map<Integer, String> map");
         List<String> expectedExceptionsThrown = Arrays.asList("Exception", "IOException");
 
-        MethodDescription resultMethodDescription = EntityParser.getMethodDescription(testDescribedEntity);
+        MethodDescription resultMethodDescription = (MethodDescription) EntityParser.getEntityDetailDescription(testDescribedEntity);
 
         assertTrue(resultMethodDescription.isPresent());
         assertEquals("Map<String, String>", resultMethodDescription.getReturnType());
@@ -306,7 +352,7 @@ public class EntityParserTest {
     }
 
     @Test
-    public void getMethodDescription_successFlow_noParams() {
+    public void getEntityDetailDescription_method_noParams() {
         DescribedEntity testDescribedEntity = new DescribedEntity();
         testDescribedEntity.setType(DescribedEntity.Type.METHOD);
         testDescribedEntity.setPresent(true);
@@ -315,7 +361,7 @@ public class EntityParserTest {
         List<String> expectedParams = Collections.emptyList();
         List<String> expectedExceptionsThrown = Arrays.asList("Exception", "IOException");
 
-        MethodDescription resultMethodDescription = EntityParser.getMethodDescription(testDescribedEntity);
+        MethodDescription resultMethodDescription = (MethodDescription) EntityParser.getEntityDetailDescription(testDescribedEntity);
 
         assertTrue(resultMethodDescription.isPresent());
         assertEquals("Map<String, String>", resultMethodDescription.getReturnType());
@@ -324,7 +370,7 @@ public class EntityParserTest {
     }
 
     @Test
-    public void getMethodDescription_successFlow_void() {
+    public void getEntityDetailDescription_method_void() {
         DescribedEntity testDescribedEntity = new DescribedEntity();
         testDescribedEntity.setType(DescribedEntity.Type.METHOD);
         testDescribedEntity.setPresent(true);
@@ -333,7 +379,7 @@ public class EntityParserTest {
         List<String> expectedParams = Collections.singletonList("Integer integer");
         List<String> expectedExceptionsThrown = Collections.singletonList("Exception");
 
-        MethodDescription resultMethodDescription = EntityParser.getMethodDescription(testDescribedEntity);
+        MethodDescription resultMethodDescription = (MethodDescription) EntityParser.getEntityDetailDescription(testDescribedEntity);
 
         assertTrue(resultMethodDescription.isPresent());
         assertEquals("void", resultMethodDescription.getReturnType());
@@ -342,7 +388,7 @@ public class EntityParserTest {
     }
 
     @Test
-    public void getMethodDescription_successFlow_complexGenerics_case1() {
+    public void getEntityDetailDescription_method_complexGenerics_case1() {
         DescribedEntity testDescribedEntity = new DescribedEntity();
         testDescribedEntity.setType(DescribedEntity.Type.METHOD);
         testDescribedEntity.setPresent(true);
@@ -351,7 +397,7 @@ public class EntityParserTest {
         List<String> expectedParams = Collections.singletonList("Map<Class<?>, SomeClass> par");
         List<String> expectedExceptionsThrown = Collections.singletonList("Exception");
 
-        MethodDescription resultMethodDescription = EntityParser.getMethodDescription(testDescribedEntity);
+        MethodDescription resultMethodDescription = (MethodDescription) EntityParser.getEntityDetailDescription(testDescribedEntity);
 
         assertTrue(resultMethodDescription.isPresent());
         assertEquals("void", resultMethodDescription.getReturnType());
@@ -361,7 +407,7 @@ public class EntityParserTest {
 
 
     @Test
-    public void getMethodDescription_successFlow_complexGenerics_case2() {
+    public void getEntityDetailDescription_method_complexGenerics_case2() {
         DescribedEntity testDescribedEntity = new DescribedEntity();
         testDescribedEntity.setType(DescribedEntity.Type.METHOD);
         testDescribedEntity.setPresent(true);
@@ -371,10 +417,28 @@ public class EntityParserTest {
                 " Map<Integer, String>>> par");
         List<String> expectedExceptionsThrown = Collections.singletonList("Exception");
 
-        MethodDescription resultMethodDescription = EntityParser.getMethodDescription(testDescribedEntity);
+        MethodDescription resultMethodDescription = (MethodDescription) EntityParser.getEntityDetailDescription(testDescribedEntity);
 
         assertTrue(resultMethodDescription.isPresent());
         assertEquals("void", resultMethodDescription.getReturnType());
+        assertListEquals(expectedParams, resultMethodDescription.getParams());
+        assertListEquals(expectedExceptionsThrown, resultMethodDescription.getExceptionsThrown());
+    }
+
+    @Test
+    public void getEntityDetailDescription_constructor() {
+        DescribedEntity testDescribedEntity = new DescribedEntity();
+        testDescribedEntity.setType(DescribedEntity.Type.CONSTRUCTOR);
+        testDescribedEntity.setPresent(true);
+        testDescribedEntity.setData("Constructor(Map<Class<?>, SomeClass<List<String>," +
+                " Map<Integer, String>>> par) throws Exception");
+        List<String> expectedParams = Collections.singletonList("Map<Class<?>, SomeClass<List<String>," +
+                " Map<Integer, String>>> par");
+        List<String> expectedExceptionsThrown = Collections.singletonList("Exception");
+
+        ConstructorDescription resultMethodDescription = (ConstructorDescription) EntityParser.getEntityDetailDescription(testDescribedEntity);
+
+        assertTrue(resultMethodDescription.isPresent());
         assertListEquals(expectedParams, resultMethodDescription.getParams());
         assertListEquals(expectedExceptionsThrown, resultMethodDescription.getExceptionsThrown());
     }
