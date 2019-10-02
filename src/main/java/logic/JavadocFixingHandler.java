@@ -103,10 +103,13 @@ public class JavadocFixingHandler {
     String fixParamStatements(String javadoc, EntityDetailDescription entityDescription) {
         List<String> javadocParams = getStatements(javadoc, "param");
         List<List<String>> params = convertParams(entityDescription.getParams());
+        String beforeParamNameRegex = "[^<]*?@param[\\s\\(]*?\\b";
+        String afterParamNameRegex = "\\b[\\s\\)]*?[^<]*";
 
         for (String javadocParam : javadocParams) {
             List<String> validJavadocParameterName = params.stream()
-                    .filter(p -> javadocParam.matches("[^<]*\\b" + p.get(1) + "\\b[^<]*")).findAny().orElse(null);
+                    .filter(p -> javadocParam.matches( beforeParamNameRegex + p.get(1) + afterParamNameRegex))
+                    .findAny().orElse(null);
 
             if (validJavadocParameterName == null) {
                 javadoc = javadoc.replaceFirst(LINE_BEGIN_PATTERN + eliminateSpecialChars(javadocParam), "");
@@ -138,7 +141,7 @@ public class JavadocFixingHandler {
             int indexOfFirstInlineBlockStartMark = javadoc.indexOf("{");
 
             boolean paramPresentedInJavadoc = javadocParams.stream()
-                    .anyMatch(p -> p.matches("[^<]*\\b" + param.get(1) + "\\b[^<]*"));
+                    .anyMatch(p -> p.matches(beforeParamNameRegex + param.get(1) + afterParamNameRegex));
 
             if (!paramPresentedInJavadoc) {
                 String parameterStatement = "@param " + param.get(1) + " - the " + param.get(1) + " (" + param.get(0) + ")\n";
