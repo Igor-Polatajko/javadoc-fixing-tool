@@ -108,7 +108,7 @@ public class JavadocFixingHandler {
 
         for (String javadocParam : javadocParams) {
             List<String> validJavadocParameterName = params.stream()
-                    .filter(p -> javadocParam.matches( beforeParamNameRegex + p.get(1) + afterParamNameRegex))
+                    .filter(p -> javadocParam.matches(beforeParamNameRegex + p.get(1) + afterParamNameRegex))
                     .findAny().orElse(null);
 
             if (validJavadocParameterName == null) {
@@ -120,7 +120,8 @@ public class JavadocFixingHandler {
 
             if (javadocParamParts.length < 3) {
                 String replacement = "@param " + validJavadocParameterName.get(1) + " - the " +
-                        validJavadocParameterName.get(1) + " (" + validJavadocParameterName.get(0) + ")";
+                        validJavadocParameterName.get(1) +
+                        " (" + replaceVarargs(validJavadocParameterName.get(0)) + ")";
 
                 javadoc = javadoc.replaceFirst(eliminateSpecialChars(javadocParam), replacement);
             }
@@ -144,7 +145,8 @@ public class JavadocFixingHandler {
                     .anyMatch(p -> p.matches(beforeParamNameRegex + param.get(1) + afterParamNameRegex));
 
             if (!paramPresentedInJavadoc) {
-                String parameterStatement = "@param " + param.get(1) + " - the " + param.get(1) + " (" + param.get(0) + ")\n";
+                String parameterStatement = "@param " + param.get(1) + " - the "
+                        + param.get(1) + " (" + replaceVarargs(param.get(0)) + ")\n";
 
                 if (indexOfFirstStatementMark > 0 && (indexOfFirstInlineBlockStartMark < 0
                         || indexOfFirstStatementMark < indexOfFirstInlineBlockStartMark)) {
@@ -162,6 +164,13 @@ public class JavadocFixingHandler {
         }
 
         return javadoc;
+    }
+
+    private String replaceVarargs(String paramType) {
+        if (paramType.matches(".*?[.]{3}")) {
+            return "varargs of type " + paramType.substring(0, paramType.length() - 3);
+        }
+        return paramType;
     }
 
     @VisibleForTesting

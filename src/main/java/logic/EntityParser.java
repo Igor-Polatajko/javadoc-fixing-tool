@@ -131,8 +131,8 @@ public class EntityParser {
     }
 
     private static DescribedEntity.Type resolveEntityType(String data) {
-        String methodRegex = "[^.]*?[A-Za-z0-9_<>\\[\\]]+?\\s+?[a-z][A-Za-z0-9_<>]*?[(][^.]*?[)][^.]*";
-        String constructorRegex = "[^=.]*?[A-Za-z0-9_<>\\[\\]]+?\\s+?[A-Z][A-Za-z0-9_<>]*?[(][^.]*?[)][^.]*";
+        String methodRegex = "[^.]*?[A-Za-z0-9_<>\\[\\]]+?\\s+?[a-z][A-Za-z0-9_<>]*?[(][^^]*?[)][^.]*";
+        String constructorRegex = "[^=.]*?[A-Za-z0-9_<>\\[\\]]+?\\s+?[A-Z][A-Za-z0-9_<>]*?[(][^^]*?[)][^.]*";
         String fieldRegex = "[^.]*?[A-Za-z0-9_<>]+?\\s+?\\w+?";
 
         if (data.matches(methodRegex)) {

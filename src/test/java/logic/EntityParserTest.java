@@ -104,6 +104,35 @@ public class EntityParserTest {
     }
 
     @Test
+    public void getDescribedEntity_successFlow_method_varargs() {
+        String testValue = "public class App {\n" +
+                "\n" +
+                "\n" +
+                "    /**\n" +
+                "     * a and b\n" +
+                "     * Map  (String - key,  String - value)\n" +
+                "     *     {@code Map }\n" +
+                "     *         Collection of generics type String\n" +
+                "     */\n" +
+                "    @Annotation\n" +
+                "    void m(String... args) throws Exception {\n" +
+                "}\n" +
+                "\n" +
+                "    }\n" +
+                "\n" +
+                "}\n" +
+                "\n";
+
+        String expectedData = "*/        void m(String... args) throws Exception ";
+
+        DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(167, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.METHOD, resultDescribedEntity.getType());
+        assertEquals(expectedData, resultDescribedEntity.getData());
+    }
+
+    @Test
     public void getDescribedEntity_successFlow_field() {
         String testValue = "public class App {\n" +
                 "\n" +
