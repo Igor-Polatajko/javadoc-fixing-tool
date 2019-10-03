@@ -412,14 +412,15 @@ public class JavadocFixingHandlerTest {
                 "     */";
 
         String expectedValue = "/**\n" +
-                "     * @param integer - the integer (Integer)\n" +
-                "     * @param string - the string (String)\n" +
                 "     * Text\n" +
                 "     * {@link com.package.Class}\n" +
+                "     * @param c - the c (Class)\n" +
+                "     * @param string - the string (String)\n" +
+                "     * @param integer - the integer (Integer)\n" +
                 "     */";
 
         MethodDescription testMethodDescription = new MethodDescription();
-        testMethodDescription.setParams(Arrays.asList("Integer integer", "String string"));
+        testMethodDescription.setParams(Arrays.asList("Integer integer", "String string", "Class c"));
 
         String actualValue = javadocFixingHandler.fixParamStatements(testValue, testMethodDescription);
 
@@ -515,6 +516,47 @@ public class JavadocFixingHandlerTest {
 
         assertEquals(expectedValue, actualValue);
     }
+
+    @Test
+    public void fixParamStatements_correctOrder() {
+        String testValue = "/**\n" +
+                "     * Text\n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * Text\n" +
+                "     * @param o - the o (Object)\n" +
+                "     * @param map - the map (Map<String, String>)\n" +
+                "     * @param list - the list (List<String>)\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setParams(Arrays.asList("Object o", "Map<String, String> map", "List<String> list"));
+
+        String actualValue = javadocFixingHandler.fixParamStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
+    @Test
+    public void fixParamStatements_spaceBeforeGenerics() {
+        String testValue = "/**\n" +
+                "     * Text\n" +
+                "     */";
+
+        String expectedValue = "/**\n" +
+                "     * Text\n" +
+                "     * @param list - the list (List<String>)\n" +
+                "     */";
+
+        MethodDescription testMethodDescription = new MethodDescription();
+        testMethodDescription.setParams(Collections.singletonList("List <String> list"));
+
+        String actualValue = javadocFixingHandler.fixParamStatements(testValue, testMethodDescription);
+
+        assertEquals(expectedValue, actualValue);
+    }
+
 
     @Test
     public void fixParamStatements_emptyParams() {

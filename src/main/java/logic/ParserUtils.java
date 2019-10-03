@@ -1,6 +1,7 @@
 package logic;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,6 +21,25 @@ public class ParserUtils {
 
             if (index > indexOfBlockTypeStartInsideJavadoc && index < indexOfBlockTypeEndInsideJavadoc) {
                 return true;
+            }
+        }
+    }
+
+    static int indexOfFirstOutsideCurlyBrackets(String javadoc, String statement) {
+        int indexOfStartCurlyBracket = -1;
+        int indexOfEndCurlyBracket = -1;
+        int indexOfStatement;
+        while (true) {
+            indexOfStartCurlyBracket = javadoc.indexOf("{", indexOfStartCurlyBracket + 1);
+            indexOfEndCurlyBracket = javadoc.indexOf("}", indexOfEndCurlyBracket + 1);
+            indexOfStatement = javadoc.indexOf(statement, indexOfStartCurlyBracket + 1);
+
+            if (indexOfStartCurlyBracket < 0 && indexOfEndCurlyBracket < 0) {
+                return indexOfStatement;
+            }
+
+            if (indexOfStartCurlyBracket < indexOfStatement && indexOfStatement < indexOfEndCurlyBracket) {
+                return -1;
             }
         }
     }
@@ -138,8 +158,13 @@ public class ParserUtils {
         List<List<String>> methodParams = new ArrayList<>();
         for (String param : params) {
             List<String> paramList = (new ArrayList<>(completeGenerics(param.split(" "))));
-            if (paramList.size() == 3 && paramList.get(0).equals("final")) {
-                methodParams.add(paramList.subList(1, 3));
+            if (paramList.size() == 3) {
+                if (paramList.get(0).equals("final")) {
+                    methodParams.add(paramList.subList(1, 3));
+                } else {
+                    String paramType = String.join("", paramList.subList(0, paramList.size() - 1));
+                    methodParams.add(Arrays.asList(paramType, paramList.get(paramList.size() - 1)));
+                }
             } else {
                 methodParams.add(paramList.subList(0, 2));
             }

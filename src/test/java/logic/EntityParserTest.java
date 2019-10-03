@@ -297,6 +297,23 @@ public class EntityParserTest {
     }
 
     @Test
+    public void getDescribedEntity_successFlow_another1() {
+        String testValue = "/**\n" +
+                " * Javadoc\n" +
+                " */\n" +
+                "// comment\n" +
+                "        assertNotNull(aB.tT());";
+
+        String expectedData = "*/// comment        assertNotNull(aB.tT())";
+
+        DescribedEntity resultDescribedEntity = EntityParser.getDescribedEntity(16, testValue);
+
+        assertTrue(resultDescribedEntity.isPresent());
+        assertEquals(DescribedEntity.Type.ANOTHER, resultDescribedEntity.getType());
+        assertEquals(expectedData, resultDescribedEntity.getData());
+    }
+
+    @Test
     public void getDescribedEntity_successFlow_another_objectCreationNotResolvedAsConstructorDescription() {
         String testValue = "/**\n" +
                 " * Javadoc\n" +

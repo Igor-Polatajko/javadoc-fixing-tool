@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 import static logic.ParserUtils.convertParams;
 import static logic.ParserUtils.eliminateSpecialChars;
 import static logic.ParserUtils.getStatements;
-import static logic.ParserUtils.skipEmptyLines;
+import static logic.ParserUtils.indexOfFirstOutsideCurlyBrackets;
 
 public class JavadocFixingHandler {
 
@@ -138,32 +138,29 @@ public class JavadocFixingHandler {
 
         Collections.reverse(params);
         for (List<String> param : params) {
-            int indexOfFirstStatementMark = javadoc.indexOf("@");
-            int indexOfFirstInlineBlockStartMark = javadoc.indexOf("{");
-
             boolean paramPresentedInJavadoc = javadocParams.stream()
                     .anyMatch(p -> p.matches(beforeParamNameRegex + param.get(1) + afterParamNameRegex));
 
             if (!paramPresentedInJavadoc) {
-                String parameterStatement = "@param " + param.get(1) + " - the "
-                        + param.get(1) + " (" + replaceVarargs(param.get(0)) + ")\n";
-
-                if (indexOfFirstStatementMark > 0 && (indexOfFirstInlineBlockStartMark < 0
-                        || indexOfFirstStatementMark < indexOfFirstInlineBlockStartMark)) {
-                    javadoc = javadoc.substring(0, indexOfFirstStatementMark) + parameterStatement + "     * "
-                            + javadoc.substring(indexOfFirstStatementMark);
-                } else if (indexOfFirstInlineBlockStartMark > 0) {
-                    javadoc = javadoc.replaceFirst("[/][*][*]",
-                            "/**\n     * " + parameterStatement);
-                    javadoc = skipEmptyLines(javadoc);
-                } else {
-                    javadoc = javadoc.replaceFirst("[*][/]",
-                            "* " + parameterStatement + "     */");
-                }
+                javadoc = addParamToJavadoc(javadoc, param);
             }
         }
-
         return javadoc;
+    }
+
+    private String addParamToJavadoc(String javadoc, List<String> param) {
+        int indexOfFirstStatementMarkOutsideCurlyBrackets = indexOfFirstOutsideCurlyBrackets(javadoc, "@");
+        String parameterStatement = "@param " + param.get(1) + " - the "
+                + param.get(1) + " (" + replaceVarargs(param.get(0)) + ")\n";
+
+        if (indexOfFirstStatementMarkOutsideCurlyBrackets > 0) {
+            return javadoc.substring(0, indexOfFirstStatementMarkOutsideCurlyBrackets) + parameterStatement + "     * "
+                    + javadoc.substring(indexOfFirstStatementMarkOutsideCurlyBrackets);
+        }
+
+        return javadoc.replaceFirst("[*][/]",
+                "* " + parameterStatement + "     */");
+
     }
 
     private String replaceVarargs(String paramType) {
